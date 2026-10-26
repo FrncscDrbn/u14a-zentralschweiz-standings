@@ -32,45 +32,67 @@ SCORE = re.compile(
     rf"(?P<away>{TEAM_ALT})\s+(?P<as>\d+)",
     re.IGNORECASE,
 )
-DATE = re.compile(r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\s*,?\s*(\d{1,2})\.(\d{1,2})\.(\d{4})", re.I)
+DATE = re.compile(
+    r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\s*,?\s*"
+    r"(\d{1,2})\.(\d{1,2})\.(\d{4})",
+    re.I,
+)
+GROUP = re.compile(r"Regular Season Gr\.\s*2", re.I)
+
 
 def main():
-    response = requests.get(URL, timeout=40, headers={"User-Agent": "U14A-Standings/1.0 (GitHub Actions)"})
+    response = requests.get(
+        URL,
+        timeout=40,
+        headers={"User-Agent": "Mozilla/5.0 (compatible; U14A-Standings/1.0)"},
+    )
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
-    # Keep spaces between separate HTML elements; normalize whitespace for matching.
     text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
+
     games = []
     seen = set()
-    markers = list(re.finditer(r"Regular Season Gr\.\s*2", text, re.I))
+    markers = list(GROUP.finditer(text))
+    score_matches = 0
+
+    # Parse each individual Group 2 fixture, rather than searching the whole page:
+    # the same teams can also meet in exhibition games outside the regular season.
     for index, marker in enumerate(markers):
-        # Restrict parsing to this fixture, so a later result cannot be assigned to it.
-        end = markers[index + 1].start() if index + 1 < len(markers) else min(len(text), marker.start() + 500)
+        end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
         window = text[marker.start():end]
         match = SCORE.search(window)
         if not match:
             continue
+        score_matches += 1
+
         home, away = match.group("home"), match.group("away")
-        home = next((t for t in TEAMS if t.casefold() == home.casefold()), home)
-        away = next((t for t in TEAMS if t.casefold() == away.casefold()), away)
+        home = next(t for t in TEAMS if t.casefold() == home.casefold())
+        away = next(t for t in TEAMS if t.casefold() == away.casefold())
         hs, aws = int(match.group("hs")), int(match.group("as"))
-        key = (home, hs, away, aws)
+
+        prefix = text[:marker.start()]
+        dates = list(DATE.finditer(prefix))
+        if not dates:
+            continue
+        d = dates[-1]
+        game_date = f"{d.group(3)}-{int(d.group(2)):02d}-{int(d.group(1)):02d}"
+        key = (game_date, home, hs, away, aws)
         if key in seen:
             continue
         seen.add(key)
-        prefix = text[max(0, marker.start() - 220):marker.start()]
-        dates = list(DATE.finditer(prefix))
-        game_date = None
-        if dates:
-            d = dates[-1]
-            game_date = f"{d.group(3)}-{int(d.group(2)):02d}-{int(d.group(1)):02d}"
         games.append({
-            "date": game_date or "",
+            "date": game_date,
             "home": home, "home_score": hs,
             "away": away, "away_score": aws,
         })
+
     if not games:
+        content_type = response.headers.get("content-type", "unknown")
+        print(f"DEBUG: SIHF HTTP {response.status_code}; content-type={content_type}; bytes={len(response.content)}")
+        print(f"DEBUG: extracted text characters={len(text)}; Group 2 markers={len(markers)}; score matches={score_matches}")
+        print(f"DEBUG: page text preview={text[:500]!r}")
         raise SystemExit("No Group 2 results parsed; leaving data/games.json unchanged.")
+
     games.sort(key=lambda g: (g["date"], g["home"], g["away"]))
     payload = {
         "source": URL,
@@ -80,5 +102,7 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Parsed {len(games)} completed Group 2 games.")
+
+
 if __name__ == "__main__":
     main()
