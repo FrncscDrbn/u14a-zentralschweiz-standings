@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "games.json"
-URL = "https://www.sihf.ch/de/game-center/liga/spielplan/124-3"
+URL = "https://www.sihf.ch/de/game-center/liga/124-3"
 TEAMS = [
     "Argovia Stars",
     "EHC Basel Nachwuchs",
@@ -37,7 +37,7 @@ DATE = re.compile(
     r"(\d{1,2})\.(\d{1,2})\.(\d{4})",
     re.I,
 )
-GROUP = re.compile(r"Regular Season Gr\.\s*2", re.I)
+GROUP = re.compile(r"Regular Season\s+(?:Gruppe|Gr\.)\s*2\b", re.I)
 
 
 def main():
@@ -90,7 +90,7 @@ def main():
         content_type = response.headers.get("content-type", "unknown")
         print(f"DEBUG: SIHF HTTP {response.status_code}; content-type={content_type}; bytes={len(response.content)}")
         print(f"DEBUG: extracted text characters={len(text)}; Group 2 markers={len(markers)}; score matches={score_matches}")
-        print(f"DEBUG: page text preview={text[:500]!r}")
+        print(f"DEBUG: page text preview={text[:1200]!r}")
         raise SystemExit("No Group 2 results parsed; leaving data/games.json unchanged.")
 
     games.sort(key=lambda g: (g["date"], g["home"], g["away"]))
