@@ -9,6 +9,9 @@ on:
       - "scripts/update_data.py"
 permissions:
   contents: write
+concurrency:
+  group: refresh-standings-data
+  cancel-in-progress: false
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -28,5 +31,8 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add data/games.json
             git commit -m "Refresh SIHF Group 2 results"
+            # The scheduled refresh and manual runs can overlap with other commits.
+            # Rebase the generated data commit onto the latest main before pushing.
+            git pull --rebase origin main
             git push
           fi
