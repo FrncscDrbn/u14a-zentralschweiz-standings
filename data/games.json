@@ -1,0 +1,70 @@
+{
+  "source": "https://www.sihf.ch/de/game-center/liga/spielplan/124-3",
+  "updated_at": "2026-10-26T00:00:00Z",
+  "note": "Seed results verified against SIHF schedule; automatic scraper will refresh this file.",
+  "games": [
+    {
+      "date": "2026-10-04",
+      "home": "HC Wohlen Freiamt",
+      "home_score": 4,
+      "away": "EHC Sursee",
+      "away_score": 7
+    },
+    {
+      "date": "2026-10-04",
+      "home": "EHC Basel Nachwuchs",
+      "home_score": 12,
+      "away": "Hockey Innerschwyz HCI II",
+      "away_score": 4
+    },
+    {
+      "date": "2026-10-04",
+      "home": "LUNOXX Reinach",
+      "home_score": 7,
+      "away": "Argovia Stars",
+      "away_score": 18
+    },
+    {
+      "date": "2026-10-04",
+      "home": "HC NWU Green",
+      "home_score": 8,
+      "away": "HC NWU Black",
+      "away_score": 6
+    },
+    {
+      "date": "2026-10-11",
+      "home": "Argovia Stars",
+      "home_score": 12,
+      "away": "HC Wohlen Freiamt",
+      "away_score": 6
+    },
+    {
+      "date": "2026-10-11",
+      "home": "LUNOXX Reinach",
+      "home_score": 2,
+      "away": "EHC Basel Nachwuchs",
+      "away_score": 4
+    },
+    {
+      "date": "2026-10-11",
+      "home": "HC NWU Green",
+      "home_score": 1,
+      "away": "EHC Basel Nachwuchs",
+      "away_score": 13
+    },
+    {
+      "date": "2026-10-11",
+      "home": "HC Wohlen Freiamt",
+      "home_score": 6,
+      "away": "Hockey Innerschwyz HCI II",
+      "away_score": 11
+    },
+    {
+      "date": "2026-10-17",
+      "home": "Argovia Stars",
+      "home_score": 9,
+      "away": "HC NWU Black",
+      "away_score": 4
+    }
+  ]
+}
