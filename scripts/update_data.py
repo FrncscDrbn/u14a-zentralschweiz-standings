@@ -42,9 +42,11 @@ def main():
     text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
     games = []
     seen = set()
-    for marker in re.finditer(r"Regular Season Gr\.\s*2", text, re.I):
-        # The SIHF schedule lists each fixture immediately after its group/status label.
-        window = text[marker.start():marker.start() + 500]
+    markers = list(re.finditer(r"Regular Season Gr\.\s*2", text, re.I))
+    for index, marker in enumerate(markers):
+        # Restrict parsing to this fixture, so a later result cannot be assigned to it.
+        end = markers[index + 1].start() if index + 1 < len(markers) else min(len(text), marker.start() + 500)
+        window = text[marker.start():end]
         match = SCORE.search(window)
         if not match:
             continue
