@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b33">
+  <title>U14-A Zentralschweiz · Gruppe 2</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1220;--panel:#121d31;--line:#26344d;--muted:#a9b7ce;--text:#f3f6fb;--accent:#ffcf4a;--blue:#5fa8ff}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#1a2c4c 0,#0b1220 58%);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text)}
+    main{max-width:1040px;margin:auto;padding:34px 18px 50px}.hero{display:flex;gap:18px;align-items:center;margin-bottom:24px}.mark{width:58px;height:58px;border-radius:16px;background:var(--accent);color:#101b33;display:grid;place-items:center;font-weight:900;font-size:22px;flex-shrink:0}
+    h1{font-size:clamp(26px,5vw,42px);line-height:1.08;margin:0 0 8px;letter-spacing:-.03em}h2{font-size:19px;margin:0 0 15px}p{margin:0;color:var(--muted)}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-weight:800;color:var(--accent);font-size:12px;margin-bottom:8px}
+    .grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);gap:18px}.panel{background:rgba(18,29,49,.92);border:1px solid var(--line);border-radius:18px;padding:20px;min-width:0}
+    .table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;white-space:nowrap;font-variant-numeric:tabular-nums}th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;text-align:right;padding:10px 8px;border-bottom:1px solid var(--line)}td{text-align:right;padding:12px 8px;border-bottom:1px solid rgba(38,52,77,.7)}th:first-child,td:first-child{text-align:left}tbody tr:last-child td{border-bottom:0}.team{font-weight:650}.rank{color:var(--muted);width:25px}.highlight td{background:rgba(255,207,74,.08)}.highlight td:nth-child(2){color:var(--accent)}
+    .match{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(38,52,77,.7)}.match:last-child{border-bottom:0}.fixture{min-width:0}.teams{font-weight:650}.date{font-size:12px;color:var(--muted);margin-top:3px}.score{font-size:20px;font-weight:850;white-space:nowrap}.empty{padding:18px 0;color:var(--muted)}.foot{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:18px;font-size:12px;color:var(--muted)}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}.dot{width:7px;height:7px;border-radius:50%;background:#62d99a}
+    @media(max-width:760px){.grid{grid-template-columns:1fr}.panel{padding:16px}main{padding:24px 12px 36px}.hero{align-items:flex-start}.mark{width:48px;height:48px;border-radius:13px}}
+  </style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <div class="mark">U14</div>
+    <div><div class="eyebrow">Swiss Ice Hockey · Saison 2026/27</div><h1>Zentralschweiz — Gruppe 2</h1><p>Rangliste und Resultate der Regular Season · mit Fokus auf Argovia Stars</p></div>
+  </header>
+  <div class="grid">
+    <section class="panel">
+      <h2>Rangliste</h2>
+      <div class="table-wrap"><table aria-label="Rangliste U14-A Zentralschweiz Gruppe 2">
+        <thead><tr><th>#</th><th>Team</th><th>Sp</th><th>S</th><th>N</th><th>Tore</th><th>Diff.</th><th>Pts</th></tr></thead>
+        <tbody id="standings"><tr><td colspan="8">Rangliste wird geladen …</td></tr></tbody>
+      </table></div>
+      <p id="rules" style="font-size:12px;margin-top:14px">Die Rangliste wird aus den abgeschlossenen Gruppenspielen berechnet.</p>
+    </section>
+    <section class="panel">
+      <h2>Letzte Resultate</h2><div id="results"><div class="empty">Resultate werden geladen …</div></div>
+      <div class="foot"><span class="status"><span class="dot"></span><span id="updated">Lade Daten …</span></span><a href="https://www.sihf.ch/de/game-center/liga/spielplan/124-3" target="_blank" rel="noopener">Offizieller SIHF-Spielplan ↗</a></div>
+    </section>
+  </div>
+  <div class="foot"><span>Nur U14-A · Zentralschweiz · Regular Season Gruppe 2</span><span>Datenquelle: <a href="https://www.sihf.ch/de/game-center/liga/spielplan/124-3" target="_blank" rel="noopener">Swiss Ice Hockey Federation</a></span></div>
+</main>
+<script>
+const TEAM_ORDER = ["Argovia Stars","EHC Basel Nachwuchs","EHC Sursee","HC NWU Black","HC NWU Green","HC Wohlen Freiamt","Hockey Innerschwyz HCI II","LUNOXX Reinach"];
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dateFmt = s => { if(!s) return ""; const d=new Date(s+"T12:00:00"); return Number.isNaN(+d) ? s : new Intl.DateTimeFormat("de-CH",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d); };
+function render(data){
+ const games=(data.games||[]).filter(g=>g.home&&g.away&&Number.isInteger(g.home_score)&&Number.isInteger(g.away_score));
+ const rows=TEAM_ORDER.map(team=>({team,gp:0,w:0,l:0,gf:0,ga:0,pts:0}));
+ const byName=new Map(rows.map(r=>[r.team,r]));
+ for(const g of games){const h=byName.get(g.home),a=byName.get(g.away);if(!h||!a)continue;h.gp++;a.gp++;h.gf+=g.home_score;h.ga+=g.away_score;a.gf+=g.away_score;a.ga+=g.home_score;
+   if(g.home_score>g.away_score){h.w++;a.l++;h.pts+=3;}else if(g.home_score<g.away_score){a.w++;h.l++;a.pts+=3;}
+ }
+ rows.sort((a,b)=>b.pts-a.pts||((b.gf-b.ga)-(a.gf-a.ga))||b.gf-a.gf||a.team.localeCompare(b.team,"de"));
+ document.querySelector("#standings").innerHTML=rows.map((r,i)=>'<tr class="'+(r.team==="Argovia Stars"?'highlight':'')+'"><td class="rank">'+(i+1)+'</td><td class="team">'+esc(r.team)+'</td><td>'+r.gp+'</td><td>'+r.w+'</td><td>'+r.l+'</td><td>'+r.gf+':'+r.ga+'</td><td>'+(r.gf-r.ga>0?"+":"")+(r.gf-r.ga)+'</td><td><strong>'+r.pts+'</strong></td></tr>').join("");
+ const sorted=[...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ const recent=sorted.slice(0,8);
+ document.querySelector("#results").innerHTML=recent.length?recent.map(g=>'<div class="match"><div class="fixture"><div class="teams">'+esc(g.home)+' <span style="color:var(--muted);font-weight:400">vs.</span> '+esc(g.away)+'</div><div class="date">'+esc(dateFmt(g.date))+'</div></div><div class="score">'+g.home_score+' : '+g.away_score+'</div></div>').join(""):'<div class="empty">Noch keine abgeschlossenen Gruppenspiele gefunden.</div>';
+ document.querySelector("#updated").textContent=data.updated_at?"Aktualisiert: "+dateFmt(data.updated_at.slice(0,10)):"Daten geladen";
+ document.querySelector("#rules").textContent="Punkte: Sieg 3, Niederlage 0. Sortierung: Punkte, Tordifferenz, erzielte Tore. Bitte offizielle SIHF-Rangliste für allfällige Sonderregeln prüfen.";
+}
+fetch("./data/games.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Daten konnten nicht geladen werden");return r.json()}).then(render).catch(()=>{document.querySelector("#standings").innerHTML='<tr><td colspan="8">Daten derzeit nicht verfügbar. Bitte später erneut laden.</td></tr>';document.querySelector("#results").innerHTML='<div class="empty">Die automatische Datenaktualisierung ist noch nicht erfolgreich gelaufen.</div>';document.querySelector("#updated").textContent="Keine Daten verfügbar";});
+</script>
+</body></html>
