@@ -1,7 +1,7 @@
 {
   "source": "https://www.sihf.ch/de/game-center/liga/spielplan/124-3",
-  "updated_at": "2026-10-26T00:00:00Z",
-  "note": "Seed results verified against SIHF schedule; automatic scraper will refresh this file.",
+  "updated_at": "2026-10-26T14:30:00Z",
+  "note": "Results cross-checked against the SIHF U14-A Zentralschweiz Group 2 schedule on 2026-10-26. The 2026-10-25 fixtures were still listed as scheduled by SIHF; automatic refresh parsing is being diagnosed.",
   "games": [
     {
       "date": "2026-10-04",
@@ -46,14 +46,14 @@
       "away_score": 4
     },
     {
-      "date": "2026-10-11",
-      "home": "HC NWU Green",
-      "home_score": 1,
-      "away": "EHC Basel Nachwuchs",
-      "away_score": 13
+      "date": "2026-10-14",
+      "home": "Hockey Innerschwyz HCI II",
+      "home_score": 9,
+      "away": "HC NWU Green",
+      "away_score": 1
     },
     {
-      "date": "2026-10-11",
+      "date": "2026-10-17",
       "home": "HC Wohlen Freiamt",
       "home_score": 6,
       "away": "Hockey Innerschwyz HCI II",
@@ -65,6 +65,27 @@
       "home_score": 9,
       "away": "HC NWU Black",
       "away_score": 4
+    },
+    {
+      "date": "2026-10-17",
+      "home": "HC NWU Green",
+      "home_score": 1,
+      "away": "EHC Basel Nachwuchs",
+      "away_score": 13
+    },
+    {
+      "date": "2026-10-18",
+      "home": "LUNOXX Reinach",
+      "home_score": 12,
+      "away": "EHC Sursee",
+      "away_score": 4
+    },
+    {
+      "date": "2026-10-21",
+      "home": "HC NWU Black",
+      "home_score": 17,
+      "away": "EHC Sursee",
+      "away_score": 2
     }
   ]
 }
