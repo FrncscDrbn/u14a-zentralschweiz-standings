@@ -38,16 +38,16 @@ TEAMS = [
     "LUNOXX Reinach",
 ]
 TEAM_ALT = "|".join(re.escape(t) for t in sorted(TEAMS, key=len, reverse=True))
-GROUP = re.compile(r"Regular Season\\s+(?:Gruppe|Gr\\.)\\s*2\\b", re.I)
+GROUP = re.compile(r"Regular Season\s+(?:Gruppe|Gr\.)\s*2\b", re.I)
 SCORE = re.compile(
-    rf"(?:Ende|Nach OT\\s*\\d*|Nach SO\\s*\\d*|Finished)\\s+"
-    rf"(?P<home>{TEAM_ALT})\\s+(?P<hs>\\d+)\\s+"
-    rf"(?P<away>{TEAM_ALT})\\s+(?P<as>\\d+)",
+    rf"(?:Ende|Nach OT\s*\d*|Nach SO\s*\d*|Finished)\s+"
+    rf"(?P<home>{TEAM_ALT})\s+(?P<hs>\d+)\s+"
+    rf"(?P<away>{TEAM_ALT})\s+(?P<as>\d+)",
     re.IGNORECASE,
 )
 DATE = re.compile(
-    r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\\s*,?\\s*"
-    r"(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})",
+    r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\s*,?\s*"
+    r"(\d{1,2})\.(\d{1,2})\.(\d{4})",
     re.I,
 )
 
@@ -71,7 +71,7 @@ def main():
             continue
 
         soup = BeautifulSoup(response.text, "html.parser")
-        text = re.sub(r"\\s+", " ", soup.get_text(" ", strip=True))
+        text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
         markers = list(GROUP.finditer(text))
         parsed_from_page = 0
 
@@ -115,7 +115,7 @@ def main():
         "games": games,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Parsed {len(games)} completed Group 2 games.")
     print(" | ".join(diagnostics))
 
