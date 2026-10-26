@@ -27,22 +27,22 @@ TEAMS = [
 ]
 TEAM_ALT = "|".join(re.escape(t) for t in sorted(TEAMS, key=len, reverse=True))
 SCORE = re.compile(
-    rf"(?:Ende|Nach OT\\s*\\d*|Nach SO\\s*\\d*|Finished)\\s+"
-    rf"(?P<home>{TEAM_ALT})\\s+(?P<hs>\\d+)\\s+"
-    rf"(?P<away>{TEAM_ALT})\\s+(?P<as>\\d+)",
+    rf"(?:Ende|Nach OT\s*\d*|Nach SO\s*\d*|Finished)\s+"
+    rf"(?P<home>{TEAM_ALT})\s+(?P<hs>\d+)\s+"
+    rf"(?P<away>{TEAM_ALT})\s+(?P<as>\d+)",
     re.IGNORECASE,
 )
-DATE = re.compile(r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\\s*,?\\s*(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})", re.I)
+DATE = re.compile(r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\s*,?\s*(\d{1,2})\.(\d{1,2})\.(\d{4})", re.I)
 
 def main():
     response = requests.get(URL, timeout=40, headers={"User-Agent": "U14A-Standings/1.0 (GitHub Actions)"})
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
     # Keep spaces between separate HTML elements; normalize whitespace for matching.
-    text = re.sub(r"\\s+", " ", soup.get_text(" ", strip=True))
+    text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
     games = []
     seen = set()
-    for marker in re.finditer(r"Regular Season Gr\\.\\s*2", text, re.I):
+    for marker in re.finditer(r"Regular Season Gr\.\s*2", text, re.I):
         # The SIHF schedule lists each fixture immediately after its group/status label.
         window = text[marker.start():marker.start() + 500]
         match = SCORE.search(window)
@@ -76,7 +76,7 @@ def main():
         "games": games,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Parsed {len(games)} completed Group 2 games.")
 if __name__ == "__main__":
     main()
