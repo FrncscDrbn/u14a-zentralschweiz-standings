@@ -2,6 +2,9 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: ["main"]
+  workflow_run:
+    workflows: ["Refresh standings data"]
+    types: [completed]
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,6 +15,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
