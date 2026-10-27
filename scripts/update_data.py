@@ -109,9 +109,22 @@ def main():
         print("DEBUG: " + " | ".join(diagnostics))
         raise SystemExit("No Group 2 results parsed; leaving data/games.json unchanged.")
 
+    # Preserve updated_at unless the meaningful dataset changes. Otherwise the
+    # daily scraper would create a timestamp-only diff and an unnecessary PR.
+    try:
+        previous = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        previous = {}
+
+    data_changed = previous.get("source") != SCHEDULES or previous.get("games") != games
+    if data_changed or not previous.get("updated_at"):
+        updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    else:
+        updated_at = previous["updated_at"]
+
     payload = {
         "source": SCHEDULES,
-        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "updated_at": updated_at,
         "games": games,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
