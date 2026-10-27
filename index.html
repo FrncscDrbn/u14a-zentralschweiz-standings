@@ -26,7 +26,7 @@
     <section class="panel">
       <h2>Rangliste</h2>
       <div class="table-wrap"><table aria-label="Rangliste U14-A Zentralschweiz Gruppe 2">
-        <thead><tr><th>#</th><th>Team</th><th>Sp</th><th>S</th><th>N</th><th>Tore</th><th>Diff.</th><th>Pts</th></tr></thead>
+        <thead><tr><th>#</th><th>Team</th><th>Sp</th><th>Pts</th><th>S</th><th>N</th><th>Tore</th><th>Diff.</th></tr></thead>
         <tbody id="standings"><tr><td colspan="8">Rangliste wird geladen …</td></tr></tbody>
       </table></div>
       <p id="rules" style="font-size:12px;margin-top:14px">Die Rangliste wird aus den abgeschlossenen Gruppenspielen berechnet.</p>
@@ -50,7 +50,7 @@ function render(data){
    if(g.home_score>g.away_score){h.w++;a.l++;h.pts+=3;}else if(g.home_score<g.away_score){a.w++;h.l++;a.pts+=3;}
  }
  rows.sort((a,b)=>b.pts-a.pts||((b.gf-b.ga)-(a.gf-a.ga))||b.gf-a.gf||a.team.localeCompare(b.team,"de"));
- document.querySelector("#standings").innerHTML=rows.map((r,i)=>'<tr class="'+(r.team==="Argovia Stars"?'highlight':'')+'"><td class="rank">'+(i+1)+'</td><td class="team">'+esc(r.team)+'</td><td>'+r.gp+'</td><td>'+r.w+'</td><td>'+r.l+'</td><td>'+r.gf+':'+r.ga+'</td><td>'+(r.gf-r.ga>0?"+":"")+(r.gf-r.ga)+'</td><td><strong>'+r.pts+'</strong></td></tr>').join("");
+ document.querySelector("#standings").innerHTML=rows.map((r,i)=>'<tr class="'+(r.team==="Argovia Stars"?'highlight':'')+'"><td class="rank">'+(i+1)+'</td><td class="team">'+esc(r.team)+'</td><td>'+r.gp+'</td><td><strong>'+r.pts+'</strong></td><td>'+r.w+'</td><td>'+r.l+'</td><td>'+r.gf+':'+r.ga+'</td><td>'+(r.gf-r.ga>0?"+":"")+(r.gf-r.ga)+'</td></tr>').join("");
  const sorted=[...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
  const recent=sorted.slice(0,8);
  document.querySelector("#results").innerHTML=recent.length?recent.map(g=>'<div class="match"><div class="fixture"><div class="teams">'+esc(g.home)+' <span style="color:var(--muted);font-weight:400">vs.</span> '+esc(g.away)+'</div><div class="date">'+esc(dateFmt(g.date))+'</div></div><div class="score">'+g.home_score+' : '+g.away_score+'</div></div>').join(""):'<div class="empty">Noch keine abgeschlossenen Gruppenspiele gefunden.</div>';
