@@ -4,6 +4,7 @@ on:
     - cron: "17 6 * * *"
   workflow_dispatch:
   push:
+    branches: ["main"]
     paths:
       - ".github/workflows/update-data.yml"
       - "scripts/update_data.py"
