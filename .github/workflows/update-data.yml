@@ -1,14 +1,16 @@
 name: Refresh standings data
 on:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 6 * * *"
   workflow_dispatch:
   push:
+    branches: ["main"]
     paths:
       - ".github/workflows/update-data.yml"
       - "scripts/update_data.py"
 permissions:
   contents: write
+  pull-requests: write
 concurrency:
   group: refresh-standings-data
   cancel-in-progress: false
@@ -22,17 +24,16 @@ jobs:
           python-version: "3.12"
       - run: pip install requests beautifulsoup4
       - run: python scripts/update_data.py
-      - name: Commit refreshed data
-        run: |
-          if git diff --quiet -- data/games.json; then
-            echo "No data changes."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/games.json
-            git commit -m "Refresh SIHF Group 2 results"
-            # The scheduled refresh and manual runs can overlap with other commits.
-            # Rebase the generated data commit onto the latest main before pushing.
-            git pull --rebase origin main
-            git push
-          fi
+      - name: Create or update data pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/sihf-data-refresh
+          delete-branch: true
+          add-paths: data/games.json
+          commit-message: "Refresh SIHF Group 2 results"
+          title: "Refresh SIHF Group 2 results"
+          body: |
+            Automated update of the Group 2 game results scraped from the official SIHF team schedules.
+
+            This pull request is created or updated only when data/games.json differs from the current main branch.
