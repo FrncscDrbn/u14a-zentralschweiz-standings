@@ -75,9 +75,8 @@ def date_in_text(text):
 def game_date_for_node(node, soup):
     """Resolve a fixture date from the most recent calendar day heading before it."""
     tags = soup.find_all(True)
-    try:
-        stop = tags.index(node)
-    except ValueError:
+    stop = next((i for i, tag in enumerate(tags) if tag is node), None)
+    if stop is None:
         stop = next((i for i, tag in enumerate(tags) if tag is node.parent), len(tags))
     month = year = day = None
     for tag in tags[:stop + 1]:
