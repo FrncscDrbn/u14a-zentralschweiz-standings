@@ -32,6 +32,7 @@ TEAMS = [
     "SC Langenthal",
     "SC Lyss",
     "SC Rapperswil-Jona Lakers",
+    "SC Rapperswil-Jona Lakers",
     "EV Zug II",
 ]
 TEAM_ALT = "|".join(re.escape(t) for t in sorted(TEAMS, key=len, reverse=True))
@@ -47,6 +48,42 @@ DATE = re.compile(
     r"(\d{1,2})\.(\d{1,2})\.(\d{4})",
     re.I,
 )
+MONTHS = {
+    "januar": 1, "january": 1, "februar": 2, "february": 2,
+    "märz": 3, "maerz": 3, "march": 3, "april": 4, "mai": 5, "may": 5,
+    "juni": 6, "june": 6, "juli": 7, "july": 7, "august": 8,
+    "september": 9, "oktober": 10, "october": 10, "november": 11,
+    "dezember": 12, "december": 12,
+}
+MONTH_HEADING = re.compile(
+    r"\b(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")\s+(20\d{2})\b",
+    re.I,
+)
+DAY_HEADING = re.compile(
+    r"\b(?:Mo|Di|Mi|Do|Fr|Sa|So|Mon|Tue|Wed|Thu|Fri|Sat|Sun|"
+    r"Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)\.?\s+(\d{1,2})\b",
+    re.I,
+)
+
+
+def date_for_position(text, position):
+    """Read either a full German date or SIHF's month-heading + weekday/day layout."""
+    full_dates = list(DATE.finditer(text[:position]))
+    if full_dates:
+        d = full_dates[-1]
+        return f"{d.group(3)}-{int(d.group(2)):02d}-{int(d.group(1)):02d}"
+
+    months = list(MONTH_HEADING.finditer(text[:position]))
+    if not months:
+        return None
+    month_heading = months[-1]
+    month = MONTHS[month_heading.group(1).casefold()]
+    year = int(month_heading.group(2))
+    day_headings = list(DAY_HEADING.finditer(text, month_heading.end(), position))
+    if not day_headings:
+        return None
+    day = int(day_headings[-1].group(1))
+    return f"{year:04d}-{month:02d}-{day:02d}"
 
 
 def canonical_team(name):
@@ -60,19 +97,32 @@ def main():
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
     page_text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
+    # Match completed score lines directly instead of splitting the page at each
+    # group label. SIHF's rendered page includes several adjacent league labels,
+    # and splitting at labels can leave score lines outside the expected window.
+    score_pattern = re.compile(
+        rf"(?:Ende|Nach OT\s*\d*|Nach SO\s*\d*|Finished)\s+"
+        rf"(?P<home>{TEAM_ALT})\s+(?P<hs>\d+)\s+"
+        rf"(?P<away>{TEAM_ALT})\s+(?P<as>\d+)",
+        re.IGNORECASE,
+    )
     markers = list(GROUP.finditer(page_text))
     games_by_key = {}
 
-    for index, marker in enumerate(markers):
-        end = markers[index + 1].start() if index + 1 < len(markers) else len(page_text)
-        match = SCORE.search(page_text[marker.start():end])
-        if not match:
+    for match in score_pattern.finditer(page_text):
+        # The immediately preceding fixture label identifies the regular-season
+        # group. Ignore exhibitions and other U14-Top groups.
+        context = page_text[max(0, match.start() - 180):match.start()]
+        group_matches = list(GROUP.finditer(context))
+        if not group_matches:
             continue
-        dates = list(DATE.finditer(page_text[:marker.start()]))
-        if not dates:
+        last_group_label = group_matches[-1].group(0)
+        if not re.search(r"(?:Gruppe|Gr\.)\s*2\b", last_group_label, re.I):
             continue
-        date_match = dates[-1]
-        game_date = f"{date_match.group(3)}-{int(date_match.group(2)):02d}-{int(date_match.group(1)):02d}"
+
+        game_date = date_for_position(page_text, match.start())
+        if not game_date:
+            continue
         home, away = canonical_team(match.group("home")), canonical_team(match.group("away"))
         home_score, away_score = int(match.group("hs")), int(match.group("as"))
         key = (game_date, home, home_score, away, away_score)
@@ -86,7 +136,7 @@ def main():
 
     games = sorted(games_by_key.values(), key=lambda game: (game["date"], game["home"], game["away"]))
     if not games:
-        print(f"DEBUG: HTTP {response.status_code}; {len(page_text)} text chars; {len(markers)} Group 2 fixture markers")
+        print(f"DEBUG: HTTP {response.status_code}; {len(page_text)} text chars; {len(markers)} Group 2 markers; sample: {page_text[:700]}")
         raise SystemExit("No U14-Top Group 2 results parsed; leaving data/u14top_games.json unchanged.")
 
     try:
