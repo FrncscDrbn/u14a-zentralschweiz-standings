@@ -1,0 +1,39 @@
+name: Refresh U14-Top standings data
+on:
+  schedule:
+    - cron: "37 6 * * *"
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/update-u14top-data.yml"
+      - "scripts/update_u14top_data.py"
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: refresh-u14top-standings-data
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - run: python scripts/update_u14top_data.py
+      - name: Create or update U14-Top data pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/u14top-data-refresh
+          delete-branch: true
+          add-paths: data/u14top_games.json
+          commit-message: "Refresh SIHF U14-Top Group 2 results"
+          title: "Refresh SIHF U14-Top Group 2 results"
+          body: |
+            Automated update of completed U14-Top Zentralschweiz Group 2 games from the official SIHF schedule.
+            
+            This workflow writes only data/u14top_games.json and does not modify U14-A data or its refresh workflow.

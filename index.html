@@ -36,6 +36,15 @@
       <div class="foot"><span class="status"><span class="dot"></span><span id="updated">Lade Daten …</span></span><a href="https://www.sihf.ch/de/game-center/liga/spielplan/124-3" target="_blank" rel="noopener">Offizieller SIHF-Spielplan ↗</a></div>
     </section>
   </div>
+  <section class="panel" style="margin-top:18px">
+    <h2>U14-Top · Zentralschweiz · Gruppe 2</h2>
+    <p style="font-size:13px;margin-bottom:14px">Separate Rangliste für Argovia Stars U14-Top · Regular Season Gruppe 2</p>
+    <div class="table-wrap"><table aria-label="Rangliste U14-Top Zentralschweiz Gruppe 2">
+      <thead><tr><th>#</th><th>Team</th><th>Sp</th><th>Pts</th><th>S</th><th>N</th><th>Tore</th><th>Diff.</th></tr></thead>
+      <tbody id="top-standings"><tr><td colspan="8">U14-Top-Rangliste wird geladen …</td></tr></tbody>
+    </table></div>
+    <div class="foot"><span class="status"><span class="dot"></span><span id="top-updated">Lade U14-Top-Daten …</span></span><a href="https://www.sihf.ch/de/game-center/liga/spielplan/123-3?group=74720" target="_blank" rel="noopener">Offizieller SIHF-Spielplan U14-Top ↗</a></div>
+  </section>
   <div class="foot"><span>Nur U14-A · Zentralschweiz · Regular Season Gruppe 2</span><span>Datenquelle: <a href="https://www.sihf.ch/de/game-center/liga/spielplan/124-3" target="_blank" rel="noopener">Swiss Ice Hockey Federation</a></span></div>
 </main>
 <script>
@@ -58,5 +67,20 @@ function render(data){
  document.querySelector("#rules").textContent="Punkte: Sieg 3, Niederlage 0. Sortierung: Punkte, Tordifferenz, erzielte Tore. Bitte offizielle SIHF-Rangliste für allfällige Sonderregeln prüfen.";
 }
 fetch("./data/games.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Daten konnten nicht geladen werden");return r.json()}).then(render).catch(()=>{document.querySelector("#standings").innerHTML='<tr><td colspan="8">Daten derzeit nicht verfügbar. Bitte später erneut laden.</td></tr>';document.querySelector("#results").innerHTML='<div class="empty">Die automatische Datenaktualisierung ist noch nicht erfolgreich gelaufen.</div>';document.querySelector("#updated").textContent="Keine Daten verfügbar";});
+
+const TOP_TEAMS = ["Argovia Stars","Brandis Juniors","EHC Basel Nachwuchs I","EHC Burgdorf","EHC Olten Prospect","EHC Winterthur I","GCK Lions","HC Dragon Thun gelb","HC Lugano 2 BIANCO","HC NWU","Hockey Innerschwyz HCI II","SC Bern Future schwarz","SC Langenthal","SC Lyss","SC Rapperswil-Jona Lakers","EV Zug II"];
+function renderTop(data){
+ const games=(data.games||[]).filter(g=>g.home&&g.away&&Number.isInteger(g.home_score)&&Number.isInteger(g.away_score));
+ const body=document.querySelector("#top-standings");
+ if(!games.length){body.innerHTML='<tr><td colspan="8">Noch keine U14-Top-Ergebnisse geladen. Die separate Datenaktualisierung muss zuerst erfolgreich laufen.</td></tr>';document.querySelector("#top-updated").textContent="Keine U14-Top-Daten";return;}
+ const rows=TOP_TEAMS.map(team=>({team,gp:0,w:0,l:0,gf:0,ga:0,pts:0}));
+ const byName=new Map(rows.map(r=>[r.team,r]));
+ for(const g of games){const h=byName.get(g.home),a=byName.get(g.away);if(!h||!a)continue;h.gp++;a.gp++;h.gf+=g.home_score;h.ga+=g.away_score;a.gf+=g.away_score;a.ga+=g.home_score;if(g.home_score>g.away_score){h.w++;a.l++;h.pts+=3;}else if(g.home_score<g.away_score){a.w++;h.l++;a.pts+=3;}}
+ rows.sort((a,b)=>b.pts-a.pts||((b.gf-b.ga)-(a.gf-a.ga))||b.gf-a.gf||a.team.localeCompare(b.team,"de"));
+ body.innerHTML=rows.map((r,i)=>'<tr class="'+(r.team==="Argovia Stars"?'highlight':'')+'"><td class="rank">'+(i+1)+'</td><td class="team">'+esc(r.team)+'</td><td>'+r.gp+'</td><td><strong>'+r.pts+'</strong></td><td>'+r.w+'</td><td>'+r.l+'</td><td>'+r.gf+':'+r.ga+'</td><td>'+(r.gf-r.ga>0?"+":"")+(r.gf-r.ga)+'</td></tr>').join("");
+ document.querySelector("#top-updated").textContent=data.updated_at?"Aktualisiert: "+dateFmt(data.updated_at.slice(0,10)):"Daten geladen";
+}
+fetch("./data/u14top_games.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("U14-Top-Daten fehlen");return r.json()}).then(renderTop).catch(()=>{document.querySelector("#top-standings").innerHTML='<tr><td colspan="8">U14-Top-Daten noch nicht verfügbar. Bitte nach dem ersten erfolgreichen Refresh erneut laden.</td></tr>';document.querySelector("#top-updated").textContent="Noch nicht aktualisiert";});
+
 </script>
 </body></html>
