@@ -131,7 +131,7 @@ def main():
     # status nodes first, then climb to the smallest enclosing fixture element
     # whose combined text contains the score and group label.
     candidates = []
-    status_text = re.compile(r"\\b(?:Ende|Nach\\s+OT|Nach\\s+SO|Finished)\\b", re.I)
+    status_text = re.compile(r"\b(?:Ende|Nach\s+OT|Nach\s+SO|Finished)\b", re.I)
     for status in soup.find_all(string=status_text):
         current = status.parent
         for _ in range(8):
