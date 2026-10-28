@@ -2,6 +2,182 @@
   "source": [
     "https://www.sihf.ch/de/game-center/liga/spielplan/123-3?group=74720"
   ],
-  "updated_at": null,
-  "games": []
+  "updated_at": "2026-10-28T12:02:30+00:00",
+  "games": [
+    {
+      "date": "2026-10-31",
+      "home": "Argovia Stars",
+      "home_score": 7,
+      "away": "HC NWU",
+      "away_score": 3
+    },
+    {
+      "date": "2026-10-31",
+      "home": "Argovia Stars",
+      "home_score": 18,
+      "away": "SC Lyss",
+      "away_score": 4
+    },
+    {
+      "date": "2026-10-31",
+      "home": "Brandis Juniors",
+      "home_score": 18,
+      "away": "EV Zug II",
+      "away_score": 4
+    },
+    {
+      "date": "2026-10-31",
+      "home": "Brandis Juniors",
+      "home_score": 3,
+      "away": "Hockey Innerschwyz HCI II",
+      "away_score": 7
+    },
+    {
+      "date": "2026-10-31",
+      "home": "EHC Basel Nachwuchs I",
+      "home_score": 7,
+      "away": "HC Dragon Thun gelb",
+      "away_score": 1
+    },
+    {
+      "date": "2026-10-31",
+      "home": "EHC Basel Nachwuchs I",
+      "home_score": 7,
+      "away": "SC Bern Future schwarz",
+      "away_score": 4
+    },
+    {
+      "date": "2026-10-31",
+      "home": "EHC Burgdorf",
+      "home_score": 2,
+      "away": "HC Lugano 2 BIANCO",
+      "away_score": 8
+    },
+    {
+      "date": "2026-10-31",
+      "home": "EHC Olten Prospect",
+      "home_score": 0,
+      "away": "EHC Basel Nachwuchs I",
+      "away_score": 13
+    },
+    {
+      "date": "2026-10-31",
+      "home": "EHC Olten Prospect",
+      "home_score": 6,
+      "away": "HC NWU",
+      "away_score": 5
+    },
+    {
+      "date": "2026-10-31",
+      "home": "EV Zug II",
+      "home_score": 6,
+      "away": "EHC Burgdorf",
+      "away_score": 21
+    },
+    {
+      "date": "2026-10-31",
+      "home": "HC Dragon Thun gelb",
+      "home_score": 7,
+      "away": "Argovia Stars",
+      "away_score": 8
+    },
+    {
+      "date": "2026-10-31",
+      "home": "HC Dragon Thun gelb",
+      "home_score": 6,
+      "away": "EHC Olten Prospect",
+      "away_score": 1
+    },
+    {
+      "date": "2026-10-31",
+      "home": "HC Lugano 2 BIANCO",
+      "home_score": 5,
+      "away": "Brandis Juniors",
+      "away_score": 10
+    },
+    {
+      "date": "2026-10-31",
+      "home": "HC Lugano 2 BIANCO",
+      "home_score": 10,
+      "away": "EV Zug II",
+      "away_score": 3
+    },
+    {
+      "date": "2026-10-31",
+      "home": "HC NWU",
+      "home_score": 7,
+      "away": "EHC Basel Nachwuchs I",
+      "away_score": 8
+    },
+    {
+      "date": "2026-10-31",
+      "home": "HC NWU",
+      "home_score": 4,
+      "away": "HC Lugano 2 BIANCO",
+      "away_score": 1
+    },
+    {
+      "date": "2026-10-31",
+      "home": "HC NWU",
+      "home_score": 8,
+      "away": "SC Langenthal",
+      "away_score": 2
+    },
+    {
+      "date": "2026-10-31",
+      "home": "Hockey Innerschwyz HCI II",
+      "home_score": 5,
+      "away": "EHC Burgdorf",
+      "away_score": 6
+    },
+    {
+      "date": "2026-10-31",
+      "home": "Hockey Innerschwyz HCI II",
+      "home_score": 1,
+      "away": "SC Lyss",
+      "away_score": 3
+    },
+    {
+      "date": "2026-10-31",
+      "home": "SC Bern Future schwarz",
+      "home_score": 3,
+      "away": "Argovia Stars",
+      "away_score": 4
+    },
+    {
+      "date": "2026-10-31",
+      "home": "SC Bern Future schwarz",
+      "home_score": 4,
+      "away": "Hockey Innerschwyz HCI II",
+      "away_score": 7
+    },
+    {
+      "date": "2026-10-31",
+      "home": "SC Langenthal",
+      "home_score": 3,
+      "away": "Brandis Juniors",
+      "away_score": 2
+    },
+    {
+      "date": "2026-10-31",
+      "home": "SC Langenthal",
+      "home_score": 13,
+      "away": "SC Bern Future schwarz",
+      "away_score": 3
+    },
+    {
+      "date": "2026-10-31",
+      "home": "SC Lyss",
+      "home_score": 7,
+      "away": "HC Lugano 2 BIANCO",
+      "away_score": 1
+    },
+    {
+      "date": "2026-10-31",
+      "home": "SC Lyss",
+      "home_score": 14,
+      "away": "SC Langenthal",
+      "away_score": 7
+    }
+  ]
 }
