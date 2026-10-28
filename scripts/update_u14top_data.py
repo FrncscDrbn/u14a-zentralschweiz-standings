@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh completed U14-Top Zentralschweiz Group 2 results from the SIHF group schedule.
-
-This updater is deliberately separate from scripts/update_data.py and writes only
-data/u14top_games.json, so the existing U14-A refresh workflow remains untouched.
-"""
+"""Refresh completed U14-Top Zentralschweiz Group 2 results from SIHF."""
 import json
 import re
 from datetime import datetime, timezone
@@ -16,38 +12,22 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "u14top_games.json"
 SOURCE = "https://www.sihf.ch/de/game-center/liga/spielplan/123-3?group=74720"
 
+# Teams actually listed in Zentralschweiz Regular Season Group 2.
+# Ostschweiz teams and Züri-Cup crossover fixtures must never enter this table.
 TEAMS = [
-    "Argovia Stars",
-    "Brandis Juniors",
-    "EHC Basel Nachwuchs I",
-    "EHC Burgdorf",
-    "EHC Olten Prospect",
-    "EHC Winterthur I",
-    "GCK Lions",
-    "HC Dragon Thun gelb",
-    "HC Lugano 2 BIANCO",
-    "HC NWU",
-    "Hockey Innerschwyz HCI II",
-    "SC Bern Future schwarz",
-    "SC Langenthal",
-    "SC Lyss",
-    "SC Rapperswil-Jona Lakers",
-    "SC Rapperswil-Jona Lakers",
-    "EV Zug II",
+    "Argovia Stars", "Brandis Juniors", "EHC Basel Nachwuchs I",
+    "EHC Burgdorf", "EHC Olten Prospect", "HC Dragon Thun gelb",
+    "HC Lugano 2 BIANCO", "HC NWU", "Hockey Innerschwyz HCI II",
+    "SC Bern Future schwarz", "SC Langenthal", "SC Lyss", "EV Zug II",
 ]
 TEAM_ALT = "|".join(re.escape(t) for t in sorted(TEAMS, key=len, reverse=True))
-GROUP = re.compile(r"Regular Season\s+(?:Gruppe|Gr\.)\s*2\b", re.I)
 SCORE = re.compile(
     rf"(?:Ende|Nach OT\s*\d*|Nach SO\s*\d*|Finished)\s+"
     rf"(?P<home>{TEAM_ALT})\s+(?P<hs>\d+)\s+"
     rf"(?P<away>{TEAM_ALT})\s+(?P<as>\d+)",
-    re.IGNORECASE,
-)
-DATE = re.compile(
-    r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\s*,?\s*"
-    r"(\d{1,2})\.(\d{1,2})\.(\d{4})",
     re.I,
 )
+GROUP_LABEL = re.compile(r"Regular Season\s+(?:Gruppe|Gr\.)\s*(\d+)\b", re.I)
 MONTHS = {
     "januar": 1, "january": 1, "februar": 2, "february": 2,
     "märz": 3, "maerz": 3, "march": 3, "april": 4, "mai": 5, "may": 5,
@@ -55,6 +35,10 @@ MONTHS = {
     "september": 9, "oktober": 10, "october": 10, "november": 11,
     "dezember": 12, "december": 12,
 }
+FULL_DATE = re.compile(
+    r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\s*,?\s*"
+    r"(\d{1,2})\.(\d{1,2})\.(20\d{2})", re.I
+)
 MONTH_HEADING = re.compile(
     r"\b(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")\s+(20\d{2})\b",
     re.I,
@@ -66,90 +50,139 @@ DAY_HEADING = re.compile(
 )
 
 
-def date_for_position(text, position):
-    """Read either a full German date or SIHF's month-heading + weekday/day layout."""
-    full_dates = list(DATE.finditer(text[:position]))
-    if full_dates:
-        d = full_dates[-1]
-        return f"{d.group(3)}-{int(d.group(2)):02d}-{int(d.group(1)):02d}"
+def date_in_text(text):
+    """Return a date only when a full date is present in this local text block."""
+    match = FULL_DATE.search(text)
+    if match:
+        day, month, year = map(int, match.groups())
+        try:
+            return datetime(year, month, day).date().isoformat()
+        except ValueError:
+            return None
+    month_match = MONTH_HEADING.search(text)
+    day_match = DAY_HEADING.search(text)
+    if month_match and day_match:
+        month = MONTHS[month_match.group(1).casefold()]
+        year = int(month_match.group(2))
+        day = int(day_match.group(1))
+        try:
+            return datetime(year, month, day).date().isoformat()
+        except ValueError:
+            return None
+    return None
 
-    months = list(MONTH_HEADING.finditer(text[:position]))
-    if not months:
-        return None
-    month_heading = months[-1]
-    month = MONTHS[month_heading.group(1).casefold()]
-    year = int(month_heading.group(2))
-    day_headings = list(DAY_HEADING.finditer(text, month_heading.end(), position))
-    if not day_headings:
-        return None
-    day = int(day_headings[-1].group(1))
-    return f"{year:04d}-{month:02d}-{day:02d}"
 
-
-def canonical_team(name):
-    return next(team for team in TEAMS if team.casefold() == name.casefold())
+def game_date_for_node(node):
+    """Resolve the date from the fixture's own card/row, never a page-wide date."""
+    current = node
+    for _ in range(7):
+        if current is None:
+            break
+        local_date = date_in_text(current.get_text(" ", strip=True))
+        if local_date:
+            return local_date
+        current = current.parent
+    # Some SIHF layouts render the date as a previous sibling to the fixture.
+    current = node
+    for _ in range(5):
+        if current is None:
+            break
+        sibling = current.find_previous_sibling()
+        while sibling is not None:
+            local_date = date_in_text(sibling.get_text(" ", strip=True))
+            if local_date:
+                return local_date
+            sibling = sibling.find_previous_sibling()
+        current = current.parent
+    return None
 
 
 def main():
-    session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0 (compatible; U14Top-Standings/1.0)"})
-    response = session.get(SOURCE, timeout=40)
+    response = requests.get(
+        SOURCE, timeout=40,
+        headers={"User-Agent": "Mozilla/5.0 (compatible; U14Top-Standings/1.0)"},
+    )
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
-    page_text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
-    # Match completed score lines directly instead of splitting the page at each
-    # group label. SIHF's rendered page includes several adjacent league labels,
-    # and splitting at labels can leave score lines outside the expected window.
-    score_pattern = re.compile(
-        rf"(?:Ende|Nach OT\s*\d*|Nach SO\s*\d*|Finished)\s+"
-        rf"(?P<home>{TEAM_ALT})\s+(?P<hs>\d+)\s+"
-        rf"(?P<away>{TEAM_ALT})\s+(?P<as>\d+)",
-        re.IGNORECASE,
-    )
-    markers = list(GROUP.finditer(page_text))
+
+    # Parse each DOM element containing a completed score so its date is resolved
+    # from that fixture's local card/row, rather than a global regex over the page.
+    candidates = []
+    seen_elements = set()
+    for element in soup.find_all(string=SCORE):
+        parent = element.parent
+        if parent is None:
+            continue
+        match = SCORE.search(parent.get_text(" ", strip=True))
+        if not match:
+            continue
+        # Keep only the smallest element that contains a complete score line.
+        if id(parent) in seen_elements:
+            continue
+        seen_elements.add(id(parent))
+        candidates.append((parent, match))
+
     games_by_key = {}
-
-    for match in score_pattern.finditer(page_text):
-        # The immediately preceding fixture label identifies the regular-season
-        # group. Ignore exhibitions and other U14-Top groups.
-        context = page_text[max(0, match.start() - 180):match.start()]
-        group_matches = list(GROUP.finditer(context))
-        if not group_matches:
+    skipped_no_date = 0
+    for element, match in candidates:
+        # Group labels must be in the fixture's local card/row. Do not reuse a
+        # stale group label from a previous fixture or neighboring group.
+        group = None
+        current = element
+        for _ in range(5):
+            if current is None:
+                break
+            labels = list(GROUP_LABEL.finditer(current.get_text(" ", strip=True)))
+            if labels:
+                group = int(labels[-1].group(1))
+                break
+            current = current.parent
+        if group != 2:
             continue
-        last_group_label = group_matches[-1].group(0)
-        if not re.search(r"(?:Gruppe|Gr\.)\s*2\b", last_group_label, re.I):
-            continue
 
-        game_date = date_for_position(page_text, match.start())
+        game_date = game_date_for_node(element)
         if not game_date:
+            skipped_no_date += 1
             continue
-        home, away = canonical_team(match.group("home")), canonical_team(match.group("away"))
-        home_score, away_score = int(match.group("hs")), int(match.group("as"))
-        key = (game_date, home, home_score, away, away_score)
+        home, away = match.group("home"), match.group("away")
+        hs, aws = int(match.group("hs")), int(match.group("as"))
+        key = (game_date, home, hs, away, aws)
         games_by_key[key] = {
-            "date": game_date,
-            "home": home,
-            "home_score": home_score,
-            "away": away,
-            "away_score": away_score,
+            "date": game_date, "home": home, "home_score": hs,
+            "away": away, "away_score": aws,
         }
 
-    games = sorted(games_by_key.values(), key=lambda game: (game["date"], game["home"], game["away"]))
+    games = sorted(games_by_key.values(), key=lambda g: (g["date"], g["home"], g["away"]))
     if not games:
-        print(f"DEBUG: HTTP {response.status_code}; {len(page_text)} text chars; {len(markers)} Group 2 markers; sample: {page_text[:700]}")
-        raise SystemExit("No U14-Top Group 2 results parsed; leaving data/u14top_games.json unchanged.")
+        raise SystemExit(
+            f"No valid Zentralschweiz Group 2 results parsed "
+            f"(score candidates={len(candidates)}, missing dates={skipped_no_date}); "
+            "leaving data/u14top_games.json unchanged."
+        )
+
+    # Fail closed if the parser sees suspiciously uniform dates or teams outside
+    # the known Group 2 roster. Never overwrite good data with a malformed scrape.
+    dates = {game["date"] for game in games}
+    if len(games) > 1 and len(dates) == 1:
+        raise SystemExit("All parsed results have one date; refusing to overwrite data.")
+    allowed = set(TEAMS)
+    if any(g["home"] not in allowed or g["away"] not in allowed for g in games):
+        raise SystemExit("Unexpected team in parsed results; refusing to overwrite data.")
 
     try:
         previous = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
     except (OSError, json.JSONDecodeError):
         previous = {}
     changed = previous.get("source") != [SOURCE] or previous.get("games") != games
-    updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds") if changed or not previous.get("updated_at") else previous["updated_at"]
+    updated_at = (
+        datetime.now(timezone.utc).isoformat(timespec="seconds")
+        if changed or not previous.get("updated_at") else previous["updated_at"]
+    )
     payload = {"source": [SOURCE], "updated_at": updated_at, "games": games}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Parsed {len(games)} completed U14-Top Group 2 games from SIHF.")
-    print(f"Source: {SOURCE}; group markers: {len(markers)}")
+    print(f"Parsed {len(games)} completed Zentralschweiz Group 2 games.")
+    print(f"Skipped {skipped_no_date} score candidates without fixture-local dates.")
 
 
 if __name__ == "__main__":
