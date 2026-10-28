@@ -32,6 +32,7 @@ TEAMS = [
     "SC Langenthal",
     "SC Lyss",
     "SC Rapperswil-Jona Lakers",
+    "SC Rapperswil-Jona Lakers",
     "EV Zug II",
 ]
 TEAM_ALT = "|".join(re.escape(t) for t in sorted(TEAMS, key=len, reverse=True))
@@ -60,15 +61,30 @@ def main():
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
     page_text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
+    # Match completed score lines directly instead of splitting the page at each
+    # group label. SIHF's rendered page includes several adjacent league labels,
+    # and splitting at labels can leave score lines outside the expected window.
+    score_pattern = re.compile(
+        rf"(?:Ende|Nach OT\s*\d*|Nach SO\s*\d*|Finished)\s+"
+        rf"(?P<home>{TEAM_ALT})\s+(?P<hs>\d+)\s+"
+        rf"(?P<away>{TEAM_ALT})\s+(?P<as>\d+)",
+        re.IGNORECASE,
+    )
     markers = list(GROUP.finditer(page_text))
     games_by_key = {}
 
-    for index, marker in enumerate(markers):
-        end = markers[index + 1].start() if index + 1 < len(markers) else len(page_text)
-        match = SCORE.search(page_text[marker.start():end])
-        if not match:
+    for match in score_pattern.finditer(page_text):
+        # The immediately preceding fixture label identifies the regular-season
+        # group. Ignore exhibitions and other U14-Top groups.
+        context = page_text[max(0, match.start() - 180):match.start()]
+        group_matches = list(GROUP.finditer(context))
+        if not group_matches:
             continue
-        dates = list(DATE.finditer(page_text[:marker.start()]))
+        last_group_label = group_matches[-1].group(0)
+        if not re.search(r"(?:Gruppe|Gr\.)\s*2\b", last_group_label, re.I):
+            continue
+
+        dates = list(DATE.finditer(page_text[:match.start()]))
         if not dates:
             continue
         date_match = dates[-1]
@@ -86,7 +102,7 @@ def main():
 
     games = sorted(games_by_key.values(), key=lambda game: (game["date"], game["home"], game["away"]))
     if not games:
-        print(f"DEBUG: HTTP {response.status_code}; {len(page_text)} text chars; {len(markers)} Group 2 fixture markers")
+        print(f"DEBUG: HTTP {response.status_code}; {len(page_text)} text chars; {len(markers)} Group 2 markers; sample: {page_text[:700]}")
         raise SystemExit("No U14-Top Group 2 results parsed; leaving data/u14top_games.json unchanged.")
 
     try:
