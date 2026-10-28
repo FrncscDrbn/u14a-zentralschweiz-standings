@@ -72,27 +72,48 @@ def date_in_text(text):
     return None
 
 
-def game_date_for_node(node):
-    """Resolve the date from the fixture's own card/row, never a page-wide date."""
-    current = node
-    for _ in range(7):
-        if current is None:
-            break
-        local_date = date_in_text(current.get_text(" ", strip=True))
-        if local_date:
-            return local_date
-        current = current.parent
-    # Some SIHF layouts render the date as a previous sibling to the fixture.
+def game_date_for_node(node, soup):
+    """Resolve a fixture date from the most recent calendar day heading before it."""
+    tags = soup.find_all(True)
+    stop = next((i for i, tag in enumerate(tags) if tag is node), None)
+    if stop is None:
+        stop = next((i for i, tag in enumerate(tags) if tag is node.parent), len(tags))
+    month = year = day = None
+    for tag in tags[:stop + 1]:
+        # Inspect short direct text and short heading text only; never parse a
+        # whole calendar/container that may contain several dates.
+        direct = " ".join(
+            str(s).strip() for s in tag.find_all(string=True, recursive=False)
+            if str(s).strip()
+        )
+        candidates = [direct]
+        if len(tag.get_text(" ", strip=True)) <= 35:
+            candidates.append(tag.get_text(" ", strip=True))
+        for text in candidates:
+            month_match = MONTH_HEADING.search(text)
+            if month_match:
+                month = MONTHS[month_match.group(1).casefold()]
+                year = int(month_match.group(2))
+            day_match = DAY_HEADING.fullmatch(text.strip())
+            if day_match:
+                day = int(day_match.group(1))
+    if month and year and day:
+        try:
+            return datetime(year, month, day).date().isoformat()
+        except ValueError:
+            return None
+    # Full dates sometimes appear on team-specific SIHF layouts.
     current = node
     for _ in range(5):
         if current is None:
             break
-        sibling = current.find_previous_sibling()
-        while sibling is not None:
-            local_date = date_in_text(sibling.get_text(" ", strip=True))
-            if local_date:
-                return local_date
-            sibling = sibling.find_previous_sibling()
+        full = FULL_DATE.search(current.get_text(" ", strip=True))
+        if full:
+            d, m, y = map(int, full.groups())
+            try:
+                return datetime(y, m, d).date().isoformat()
+            except ValueError:
+                return None
         current = current.parent
     return None
 
@@ -105,22 +126,28 @@ def main():
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Parse each DOM element containing a completed score so its date is resolved
-    # from that fixture's local card/row, rather than a global regex over the page.
+    # SIHF splits a visible score line across multiple HTML text nodes, so
+    # searching each individual string with SCORE misses every result. Find
+    # status nodes first, then climb to the smallest enclosing fixture element
+    # whose combined text contains the score and group label.
     candidates = []
-    seen_elements = set()
-    for element in soup.find_all(string=SCORE):
-        parent = element.parent
-        if parent is None:
-            continue
-        match = SCORE.search(parent.get_text(" ", strip=True))
-        if not match:
-            continue
-        # Keep only the smallest element that contains a complete score line.
-        if id(parent) in seen_elements:
-            continue
-        seen_elements.add(id(parent))
-        candidates.append((parent, match))
+    seen_scores = set()
+    status_text = re.compile(r"\b(?:Ende|Nach\s+OT|Nach\s+SO|Finished)\b", re.I)
+    for status in soup.find_all(string=status_text):
+        current = status.parent
+        for _ in range(8):
+            if current is None:
+                break
+            text = current.get_text(" ", strip=True)
+            match = SCORE.search(text)
+            group_match = GROUP_LABEL.search(text)
+            if match and group_match:
+                key = (match.group("home"), match.group("hs"), match.group("away"), match.group("as"), group_match.group(1))
+                if key not in seen_scores:
+                    seen_scores.add(key)
+                    candidates.append((current, match))
+                break
+            current = current.parent
 
     games_by_key = {}
     skipped_no_date = 0
@@ -140,7 +167,7 @@ def main():
         if group != 2:
             continue
 
-        game_date = game_date_for_node(element)
+        game_date = game_date_for_node(element, soup)
         if not game_date:
             skipped_no_date += 1
             continue
