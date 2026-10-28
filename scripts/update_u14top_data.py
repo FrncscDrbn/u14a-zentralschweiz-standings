@@ -44,8 +44,8 @@ SCORE = re.compile(
     re.IGNORECASE,
 )
 DATE = re.compile(
-    r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\\s*,?\\s*"
-    r"(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})",
+    r"(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)?\s*,?\s*"
+    r"(\d{1,2})\.(\d{1,2})\.(\d{4})",
     re.I,
 )
 MONTHS = {
@@ -56,12 +56,12 @@ MONTHS = {
     "dezember": 12, "december": 12,
 }
 MONTH_HEADING = re.compile(
-    r"\\b(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")\\s+(20\\d{2})\\b",
+    r"\b(" + "|".join(sorted(MONTHS, key=len, reverse=True)) + r")\s+(20\d{2})\b",
     re.I,
 )
 DAY_HEADING = re.compile(
-    r"\\b(?:Mo|Di|Mi|Do|Fr|Sa|So|Mon|Tue|Wed|Thu|Fri|Sat|Sun|"
-    r"Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)\\.?\\s+(\\d{1,2})\\b",
+    r"\b(?:Mo|Di|Mi|Do|Fr|Sa|So|Mon|Tue|Wed|Thu|Fri|Sat|Sun|"
+    r"Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)\.?\s+(\d{1,2})\b",
     re.I,
 )
 
