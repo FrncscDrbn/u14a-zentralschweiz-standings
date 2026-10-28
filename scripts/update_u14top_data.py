@@ -131,8 +131,7 @@ def main():
     # status nodes first, then climb to the smallest enclosing fixture element
     # whose combined text contains the score and group label.
     candidates = []
-    seen_scores = set()
-    status_text = re.compile(r"\b(?:Ende|Nach\s+OT|Nach\s+SO|Finished)\b", re.I)
+    status_text = re.compile(r"\\b(?:Ende|Nach\\s+OT|Nach\\s+SO|Finished)\\b", re.I)
     for status in soup.find_all(string=status_text):
         current = status.parent
         for _ in range(8):
@@ -142,16 +141,16 @@ def main():
             match = SCORE.search(text)
             group_match = GROUP_LABEL.search(text)
             if match and group_match:
-                key = (match.group("home"), match.group("hs"), match.group("away"), match.group("as"), group_match.group(1))
-                if key not in seen_scores:
-                    seen_scores.add(key)
-                    candidates.append((current, match))
+                # Keep the status node as well as the fixture container.
+                # The container can be a broad calendar wrapper, so use the
+                # status node's DOM position when resolving the fixture date.
+                candidates.append((current, status, match))
                 break
             current = current.parent
 
     games_by_key = {}
     skipped_no_date = 0
-    for element, match in candidates:
+    for element, status, match in candidates:
         # Group labels must be in the fixture's local card/row. Do not reuse a
         # stale group label from a previous fixture or neighboring group.
         group = None
@@ -167,7 +166,7 @@ def main():
         if group != 2:
             continue
 
-        game_date = game_date_for_node(element, soup)
+        game_date = game_date_for_node(status.parent, soup)
         if not game_date:
             skipped_no_date += 1
             continue
