@@ -65,9 +65,9 @@ def main():
     # group label. SIHF's rendered page includes several adjacent league labels,
     # and splitting at labels can leave score lines outside the expected window.
     score_pattern = re.compile(
-        rf"(?:Ende|Nach OT\\s*\\d*|Nach SO\\s*\\d*|Finished)\\s+"
-        rf"(?P<home>{TEAM_ALT})\\s+(?P<hs>\\d+)\\s+"
-        rf"(?P<away>{TEAM_ALT})\\s+(?P<as>\\d+)",
+        rf"(?:Ende|Nach OT\s*\d*|Nach SO\s*\d*|Finished)\s+"
+        rf"(?P<home>{TEAM_ALT})\s+(?P<hs>\d+)\s+"
+        rf"(?P<away>{TEAM_ALT})\s+(?P<as>\d+)",
         re.IGNORECASE,
     )
     markers = list(GROUP.finditer(page_text))
@@ -81,7 +81,7 @@ def main():
         if not group_matches:
             continue
         last_group_label = group_matches[-1].group(0)
-        if not re.search(r"(?:Gruppe|Gr\\.)\\s*2\\b", last_group_label, re.I):
+        if not re.search(r"(?:Gruppe|Gr\.)\s*2\b", last_group_label, re.I):
             continue
 
         dates = list(DATE.finditer(page_text[:match.start()]))
