@@ -68,7 +68,7 @@ function render(data){
 }
 fetch("./data/games.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Daten konnten nicht geladen werden");return r.json()}).then(render).catch(()=>{document.querySelector("#standings").innerHTML='<tr><td colspan="8">Daten derzeit nicht verfügbar. Bitte später erneut laden.</td></tr>';document.querySelector("#results").innerHTML='<div class="empty">Die automatische Datenaktualisierung ist noch nicht erfolgreich gelaufen.</div>';document.querySelector("#updated").textContent="Keine Daten verfügbar";});
 
-const TOP_TEAMS = ["Argovia Stars","Brandis Juniors","EHC Basel Nachwuchs I","EHC Burgdorf","EHC Olten Prospect","EHC Winterthur I","GCK Lions","HC Dragon Thun gelb","HC Lugano 2 BIANCO","HC NWU","Hockey Innerschwyz HCI II","SC Bern Future schwarz","SC Langenthal","SC Lyss","SC Rapperswil-Jona Lakers","EV Zug II"];
+const TOP_TEAMS = ["Argovia Stars","Brandis Juniors","EHC Basel Nachwuchs I","EHC Burgdorf","EHC Olten Prospect","HC Dragon Thun gelb","HC Lugano 2 BIANCO","HC NWU","Hockey Innerschwyz HCI II","SC Bern Future schwarz","SC Langenthal","SC Lyss","EV Zug II"];
 function renderTop(data){
  const games=(data.games||[]).filter(g=>g.home&&g.away&&Number.isInteger(g.home_score)&&Number.isInteger(g.away_score));
  const body=document.querySelector("#top-standings");
