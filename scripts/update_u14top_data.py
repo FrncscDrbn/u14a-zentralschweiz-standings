@@ -73,50 +73,74 @@ def date_in_text(text):
 
 
 def game_date_for_node(node, soup):
-    """Resolve a fixture date from the most recent calendar day heading before it."""
-    tags = soup.find_all(True)
-    stop = next((i for i, tag in enumerate(tags) if tag is node), None)
-    if stop is None:
-        stop = next((i for i, tag in enumerate(tags) if tag is node.parent), len(tags))
-    month = year = day = None
-    for tag in tags[:stop + 1]:
-        # Inspect short direct text and short heading text only; never parse a
-        # whole calendar/container that may contain several dates.
-        direct = " ".join(
-            str(s).strip() for s in tag.find_all(string=True, recursive=False)
-            if str(s).strip()
-        )
-        candidates = [direct]
-        if len(tag.get_text(" ", strip=True)) <= 35:
-            candidates.append(tag.get_text(" ", strip=True))
-        for text in candidates:
-            month_match = MONTH_HEADING.search(text)
-            if month_match:
-                month = MONTHS[month_match.group(1).casefold()]
-                year = int(month_match.group(2))
-            day_match = DAY_HEADING.fullmatch(text.strip())
-            if day_match:
-                day = int(day_match.group(1))
-    if month and year and day:
-        try:
-            return datetime(year, month, day).date().isoformat()
-        except ValueError:
-            return None
-    # Full dates sometimes appear on team-specific SIHF layouts.
+    """Resolve a fixture date locally; never reuse the last date in the whole page."""
     current = node
-    for _ in range(5):
+    for _ in range(8):
         if current is None:
             break
-        full = FULL_DATE.search(current.get_text(" ", strip=True))
-        if full:
-            d, m, y = map(int, full.groups())
-            try:
-                return datetime(y, m, d).date().isoformat()
-            except ValueError:
-                return None
-        current = current.parent
-    return None
 
+        # Prefer explicit machine-readable dates attached to the fixture/card.
+        for tag in ([current] if getattr(current, "attrs", None) is not None else []):
+            for key, value in tag.attrs.items():
+                if key in {"datetime", "data-date", "data-start-date", "data-game-date",
+                           "data-match-date", "data-datetime"}:
+                    values = value if isinstance(value, list) else [value]
+                    for raw in values:
+                        parsed = date_in_text(str(raw))
+                        if parsed:
+                            return parsed
+                        iso = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", str(raw))
+                        if iso:
+                            try:
+                                return datetime.strptime(iso.group(1), "%Y-%m-%d").date().isoformat()
+                            except ValueError:
+                                pass
+
+        # Some SIHF layouts put a full date in the fixture card itself.
+        local_text = current.get_text(" ", strip=True) if hasattr(current, "get_text") else ""
+        if len(local_text) <= 180:
+            parsed = date_in_text(local_text)
+            if parsed:
+                return parsed
+        current = current.parent
+
+    # Fallback: inspect only preceding siblings in the fixture's local DOM
+    # context. The old implementation scanned every preceding tag on the page,
+    # so all fixtures inherited the final calendar heading (e.g. Oct 31).
+    day = month = year = None
+    branch = node
+    for _ in range(7):
+        if branch is None or branch.parent is None:
+            break
+        sibling = branch.previous_sibling
+        inspected = 0
+        while sibling is not None and inspected < 30:
+            inspected += 1
+            text = sibling.get_text(" ", strip=True) if hasattr(sibling, "get_text") else str(sibling).strip()
+            if text and len(text) <= 100:
+                full = FULL_DATE.search(text)
+                if full:
+                    d, m, y = map(int, full.groups())
+                    try:
+                        return datetime(y, m, d).date().isoformat()
+                    except ValueError:
+                        pass
+                month_match = MONTH_HEADING.search(text)
+                if month is None and month_match:
+                    month = MONTHS[month_match.group(1).casefold()]
+                    year = int(month_match.group(2))
+                day_match = DAY_HEADING.fullmatch(text.strip())
+                if day is None and day_match:
+                    day = int(day_match.group(1))
+                if day is not None and month is not None and year is not None:
+                    try:
+                        return datetime(year, month, day).date().isoformat()
+                    except ValueError:
+                        return None
+            sibling = sibling.previous_sibling
+        branch = branch.parent
+
+    return None
 
 def main():
     response = requests.get(
