@@ -44,6 +44,10 @@
     </table></div>
     <div class="foot"><span class="status"><span class="dot"></span><span id="top-updated">Lade U14-Top-Daten …</span></span><a href="https://www.sihf.ch/de/game-center/liga/spielplan/123-3?group=74720" target="_blank" rel="noopener">Offizieller SIHF-Spielplan U14-Top ↗</a></div>
   </section>
+  <section class="panel" style="margin-top:18px">
+    <h2>Letzte U14-Top-Resultate</h2>
+    <div id="top-results"><div class="empty">Resultate werden geladen …</div></div>
+  </section>
 </main>
 <script>
 const TEAM_ORDER = ["Argovia Stars","EHC Basel Nachwuchs","EHC Sursee","HC NWU Black","HC NWU Green","HC Wohlen Freiamt","Hockey Innerschwyz HCI II","LUNOXX Reinach"];
@@ -76,9 +80,11 @@ function renderTop(data){
  for(const g of games){const h=byName.get(g.home),a=byName.get(g.away);if(!h||!a)continue;h.gp++;a.gp++;h.gf+=g.home_score;h.ga+=g.away_score;a.gf+=g.away_score;a.ga+=g.home_score;if(g.home_score>g.away_score){h.w++;a.l++;h.pts+=3;}else if(g.home_score<g.away_score){a.w++;h.l++;a.pts+=3;}}
  rows.sort((a,b)=>b.pts-a.pts||((b.gf-b.ga)-(a.gf-a.ga))||b.gf-a.gf||a.team.localeCompare(b.team,"de"));
  body.innerHTML=rows.map((r,i)=>'<tr class="'+(r.team==="Argovia Stars"?'highlight':'')+'"><td class="rank">'+(i+1)+'</td><td class="team">'+esc(r.team)+'</td><td>'+r.gp+'</td><td><strong>'+r.pts+'</strong></td><td>'+r.w+'</td><td>'+r.l+'</td><td>'+r.gf+':'+r.ga+'</td><td>'+(r.gf-r.ga>0?"+":"")+(r.gf-r.ga)+'</td></tr>').join("");
+ const recent=[...games].sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,8);
+ document.querySelector("#top-results").innerHTML=recent.length?recent.map(g=>'<div class="match"><div class="fixture"><div class="teams">'+esc(g.home)+' <span style="color:var(--muted);font-weight:400">vs.</span> '+esc(g.away)+'</div><div class="date">'+esc(dateFmt(g.date))+'</div></div><div class="score">'+g.home_score+' : '+g.away_score+'</div></div>').join(""):'<div class="empty">Noch keine abgeschlossenen U14-Top-Gruppenspiele gefunden.</div>';
  document.querySelector("#top-updated").textContent=data.updated_at?"Aktualisiert: "+dateFmt(data.updated_at.slice(0,10)):"Daten geladen";
 }
-fetch("./data/u14top_games.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("U14-Top-Daten fehlen");return r.json()}).then(renderTop).catch(()=>{document.querySelector("#top-standings").innerHTML='<tr><td colspan="8">U14-Top-Daten noch nicht verfügbar. Bitte nach dem ersten erfolgreichen Refresh erneut laden.</td></tr>';document.querySelector("#top-updated").textContent="Noch nicht aktualisiert";});
+fetch("./data/u14top_games.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("U14-Top-Daten fehlen");return r.json()}).then(renderTop).catch(()=>{document.querySelector("#top-standings").innerHTML='<tr><td colspan="8">U14-Top-Daten noch nicht verfügbar. Bitte nach dem ersten erfolgreichen Refresh erneut laden.</td></tr>';document.querySelector("#top-updated").textContent="Noch nicht aktualisiert";document.querySelector("#top-results").innerHTML='<div class="empty">Die automatische U14-Top-Datenaktualisierung ist noch nicht erfolgreich gelaufen.</div>';});
 
 </script>
 </body></html>
