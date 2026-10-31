@@ -2,7 +2,7 @@
   "source": [
     "https://www.sihf.ch/de/game-center/liga/spielplan/123-3?group=74720"
   ],
-  "updated_at": "2026-10-28T13:18:30+00:00",
+  "updated_at": "2026-10-31T20:07:16+00:00",
   "games": [
     {
       "date": "2026-10-03",
@@ -178,6 +178,13 @@
       "home_score": 3,
       "away": "Brandis Juniors",
       "away_score": 2
+    },
+    {
+      "date": "2026-10-31",
+      "home": "Argovia Stars",
+      "home_score": 6,
+      "away": "SC Langenthal",
+      "away_score": 4
     }
   ]
 }
