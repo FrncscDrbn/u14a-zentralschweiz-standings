@@ -142,6 +142,27 @@ def game_date_for_node(node, soup):
 
     return None
 
+def print_scrape_diagnostics(soup, response):
+    """Print bounded diagnostics when SIHF's page no longer matches our parser."""
+    page_text = re.sub(r"\\s+", " ", soup.get_text(" ", strip=True))
+    print("SIHF scrape diagnostics:")
+    print(f"  HTTP status: {response.status_code}")
+    print(f"  Final URL: {response.url}")
+    print(f"  Content-Type: {response.headers.get('Content-Type', 'unknown')}")
+    print(f"  Response bytes: {len(response.content)}")
+    print(f"  Page title: {soup.title.get_text(' ', strip=True) if soup.title else '(missing)'}")
+    print(f"  Visible text length: {len(page_text)}")
+    for label in ("Ende", "Nach OT", "Nach SO", "Finished", "Regular Season", "Gruppe", "Group"):
+        print(f"  Text occurrences [{label}]: {len(re.findall(re.escape(label), page_text, re.I))}")
+    for team in ("Argovia Stars", "SC Langenthal", "EHC Basel Nachwuchs I"):
+        positions = [m.start() for m in re.finditer(re.escape(team), page_text, re.I)]
+        print(f"  Team occurrences [{team}]: {len(positions)}")
+        for pos in positions[:2]:
+            start, end = max(0, pos - 160), min(len(page_text), pos + len(team) + 240)
+            print(f"    Context: {page_text[start:end]}")
+    print(f"  HTML text-node count: {len(soup.find_all(string=True))}")
+    print(f"  Elements with date attributes: {len(soup.select('[data-date], [data-datetime], time[datetime]'))}")
+
 def main():
     response = requests.get(
         SOURCE, timeout=40,
@@ -204,6 +225,7 @@ def main():
 
     games = sorted(games_by_key.values(), key=lambda g: (g["date"], g["home"], g["away"]))
     if not games:
+        print_scrape_diagnostics(soup, response)
         raise SystemExit(
             f"No valid Zentralschweiz Group 2 results parsed "
             f"(score candidates={len(candidates)}, missing dates={skipped_no_date}); "
