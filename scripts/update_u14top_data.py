@@ -171,7 +171,7 @@ def print_scrape_diagnostics(soup, response):
         for depth in range(4):
             if parent is None:
                 break
-            parent_text = re.sub(r"\\s+", " ", parent.get_text(" ", strip=True))
+            parent_text = re.sub(r"\s+", " ", parent.get_text(" ", strip=True))
             print(f"      ancestor {depth + 1} [{parent.name}]: {parent_text[:500]}")
     print(f"  HTML text-node count: {len(soup.find_all(string=True))}")
     # Check whether completed results are embedded in page hydration scripts.
@@ -183,7 +183,7 @@ def print_scrape_diagnostics(soup, response):
             print(f"  Script src: {src}")
         body = script.string or script.get_text(" ", strip=True)
         if body and any(team.casefold() in body.casefold() for team in ("Argovia Stars", "SC Langenthal", "EHC Basel Nachwuchs I")):
-            compact = re.sub(r"\\s+", " ", body)
+            compact = re.sub(r"\s+", " ", body)
             print("  Team-bearing script: " + compact[:1200])
     # Inspect the external SIHF game-center bundle; inline HTML has no results.
     for script in scripts:
@@ -260,58 +260,79 @@ def print_scrape_diagnostics(soup, response):
 
 
 def main():
-    response = requests.get(
+    # The schedule page contains fixture cards, but completed scores are loaded
+    # by SIHF through each card's HTMX GameShort endpoint. Reuse the page session
+    # so cookies and browser request headers are present.
+    session = requests.Session()
+    response = session.get(
         SOURCE, timeout=40,
-        headers={"User-Agent": "Mozilla/5.0 (compatible; U14Top-Standings/1.0)"},
+        headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36"},
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # SIHF splits a visible score line across multiple HTML text nodes, so
-    # searching each individual string with SCORE misses every result. Find
-    # status nodes first, then climb to the smallest enclosing fixture element
-    # whose combined text contains the score and group label.
-    candidates = []
-    status_text = re.compile(r"\b(?:Ende|Nach\s+OT|Nach\s+SO|Finished)\b", re.I)
-    for status in soup.find_all(string=status_text):
-        current = status.parent
-        for _ in range(8):
-            if current is None:
-                break
-            text = current.get_text(" ", strip=True)
-            match = SCORE.search(text)
-            group_match = GROUP_LABEL.search(text)
-            if match and group_match:
-                # Keep the status node as well as the fixture container.
-                # The container can be a broad calendar wrapper, so use the
-                # status node's DOM position when resolving the fixture date.
-                candidates.append((current, status, match))
-                break
-            current = current.parent
+    fixture_links = soup.select("a[hx-get][data-game-id]")
+    if not fixture_links:
+        print_scrape_diagnostics(soup, response)
+        raise SystemExit("SIHF schedule page contained no GameShort fixture cards; refusing to treat this as an empty match day.")
+
+    browser_headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
+        "Accept": "text/html, */*; q=0.01",
+        "Referer": response.url,
+        "Origin": "https://www.sihf.ch",
+        "X-Requested-With": "XMLHttpRequest",
+        "HX-Request": "true",
+        "HX-Current-URL": response.url,
+    }
 
     games_by_key = {}
     skipped_no_date = 0
-    for element, status, match in candidates:
-        # Group labels must be in the fixture's local card/row. Do not reuse a
-        # stale group label from a previous fixture or neighboring group.
-        group = None
-        current = element
-        for _ in range(5):
-            if current is None:
-                break
-            labels = list(GROUP_LABEL.finditer(current.get_text(" ", strip=True)))
-            if labels:
-                group = int(labels[-1].group(1))
-                break
-            current = current.parent
-        if group != 2:
+    completed_cards = 0
+    failed_cards = []
+    seen_ids = set()
+
+    for link in fixture_links:
+        game_id = str(link.get("data-game-id", "")).strip()
+        endpoint = link.get("hx-get", "").strip()
+        if not game_id or not endpoint or game_id in seen_ids:
+            continue
+        seen_ids.add(game_id)
+
+        detail_url = requests.compat.urljoin(response.url, endpoint)
+        try:
+            detail = session.get(detail_url, timeout=25, headers=browser_headers)
+            detail.raise_for_status()
+        except requests.RequestException as exc:
+            failed_cards.append(f"{game_id}: {type(exc).__name__}: {exc}")
             continue
 
-        game_date = game_date_for_node(status.parent, soup)
+        detail_soup = BeautifulSoup(detail.text, "html.parser")
+        detail_text = re.sub(r"\s+", " ", detail_soup.get_text(" ", strip=True))
+        match = SCORE.search(detail_text)
+        if not match:
+            # Scheduled fixtures normally say "Wie geplant"; they are not
+            # errors and must not be mistaken for completed results.
+            continue
+
+        # The fixture card itself identifies its league/group. Restrict the
+        # scraper to Group 2 and the known Zentralschweiz team roster.
+        card_text = re.sub(r"\s+", " ", link.get_text(" ", strip=True))
+        card_context = " ".join((card_text, detail_text))
+        group_match = GROUP_LABEL.search(card_context)
+        if not group_match or int(group_match.group(1)) != 2:
+            continue
+
+        home, away = match.group("home"), match.group("away")
+        if home not in TEAMS or away not in TEAMS:
+            continue
+
+        completed_cards += 1
+        game_date = game_date_for_node(link, soup)
         if not game_date:
             skipped_no_date += 1
             continue
-        home, away = match.group("home"), match.group("away")
+
         hs, aws = int(match.group("hs")), int(match.group("as"))
         key = (game_date, home, hs, away, aws)
         games_by_key[key] = {
@@ -319,14 +340,28 @@ def main():
             "away": away, "away_score": aws,
         }
 
-    games = sorted(games_by_key.values(), key=lambda g: (g["date"], g["home"], g["away"]))
-    if not games:
-        print_scrape_diagnostics(soup, response)
+    if failed_cards:
+        # Do not publish a partial scrape if SIHF failed to serve any fixture
+        # details; a transient endpoint error is different from an empty day.
         raise SystemExit(
-            f"No valid Zentralschweiz Group 2 results parsed "
-            f"(score candidates={len(candidates)}, missing dates={skipped_no_date}); "
-            "leaving data/u14top_games.json unchanged."
+            f"SIHF GameShort requests failed for {len(failed_cards)} fixture(s); "
+            f"leaving {OUT.relative_to(ROOT)} unchanged. First errors: "
+            + "; ".join(failed_cards[:5])
         )
+
+    games = sorted(games_by_key.values(), key=lambda g: (g["date"], g["home"], g["away"]))
+
+    # A valid schedule with no completed games is a normal outcome (e.g. a
+    # weekday with no matches or before the first result). Keep the last known
+    # results and exit successfully instead of failing the GitHub Actions job.
+    if not games:
+        print(
+            f"SIHF schedule checked successfully: {len(seen_ids)} Group 2 fixture "
+            f"cards inspected; no completed results found. "
+            f"Completed cards without dates: {skipped_no_date}. "
+            f"Leaving {OUT.relative_to(ROOT)} unchanged."
+        )
+        return
 
     # Fail closed if the parser sees suspiciously uniform dates or teams outside
     # the known Group 2 roster. Never overwrite good data with a malformed scrape.
@@ -349,8 +384,8 @@ def main():
     payload = {"source": [SOURCE], "updated_at": updated_at, "games": games}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Parsed {len(games)} completed Zentralschweiz Group 2 games.")
-    print(f"Skipped {skipped_no_date} score candidates without fixture-local dates.")
+    print(f"Parsed {len(games)} completed Zentralschweiz Group 2 games from {len(seen_ids)} fixture cards.")
+    print(f"Skipped {skipped_no_date} completed score candidates without fixture-local dates.")
 
 
 if __name__ == "__main__":
