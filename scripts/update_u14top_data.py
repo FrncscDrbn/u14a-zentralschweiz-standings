@@ -207,6 +207,24 @@ def print_scrape_diagnostics(soup, response):
         except requests.RequestException as exc:
             print(f"  Game-center JS fetch failed: {type(exc).__name__}: {exc}")
     print(f"  Elements with date attributes: {len(soup.select('[data-date], [data-datetime], time[datetime]'))}")
+    # Probe the HTMX GameShort endpoint used to populate individual fixture cards.
+    probe_links = soup.select('a[hx-get][data-game-id]')[:5]
+    print('  GameShort endpoint probes:', len(probe_links))
+    for link in probe_links:
+        endpoint = requests.compat.urljoin(response.url, link.get('hx-get', ''))
+        try:
+            detail = requests.get(endpoint, timeout=25, headers={
+                'User-Agent': 'Mozilla/5.0 (compatible; U14Top-Standings/1.0)',
+                'HX-Request': 'true',
+                'HX-Current-URL': response.url,
+            })
+            detail_soup = BeautifulSoup(detail.text, 'html.parser')
+            detail_text = re.sub(r'\\s+', ' ', detail_soup.get_text(' ', strip=True))
+            print('  GameShort:', 'game_id=' + str(link.get('data-game-id')), 'status=' + str(detail.status_code), 'bytes=' + str(len(detail.content)), 'content_type=' + str(detail.headers.get('Content-Type')))
+            print('    Text:', detail_text[:1000])
+            print('    HTML:', detail.text[:1800].replace('\\n', ' ') )
+        except requests.RequestException as exc:
+            print('  GameShort request failed:', type(exc).__name__, str(exc))
     # Inspect fixture cards and links associated with SIHF game IDs.
     game_links = soup.select('a[data-game-id]')
     print('  Anchors with data-game-id:', len(game_links))
