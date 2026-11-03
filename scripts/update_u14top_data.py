@@ -207,6 +207,20 @@ def print_scrape_diagnostics(soup, response):
         except requests.RequestException as exc:
             print(f"  Game-center JS fetch failed: {type(exc).__name__}: {exc}")
     print(f"  Elements with date attributes: {len(soup.select('[data-date], [data-datetime], time[datetime]'))}")
+    # Inspect server-driven fixture loading and filtering hooks.
+    htmx_elements = [tag for tag in soup.find_all(True) if any(str(key).startswith('hx-') for key in tag.attrs)]
+    print('  Elements with HTMX attributes:', len(htmx_elements))
+    for tag in htmx_elements[:60]:
+        attrs = {key: value for key, value in tag.attrs.items() if str(key).startswith('hx-') or str(key).startswith('data-') or key in ('id', 'class')}
+        print('  HTMX element:', tag.name, str(attrs)[:900])
+    for form in soup.find_all('form')[:30]:
+        print('  Form:', 'method=' + str(form.get('method', 'get')), 'action=' + str(form.get('action')), 'id=' + str(form.get('id')))
+    for tag in soup.find_all(True):
+        for key, value in tag.attrs.items():
+            key_text = str(key).casefold()
+            if key_text.startswith('data-') and any(word in key_text for word in ('game', 'match', 'fixture', 'league', 'group', 'phase')):
+                print('  Fixture data attribute:', tag.name, key, str(value)[:400])
+
 
 def main():
     response = requests.get(
