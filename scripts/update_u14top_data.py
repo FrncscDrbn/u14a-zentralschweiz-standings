@@ -207,6 +207,17 @@ def print_scrape_diagnostics(soup, response):
         except requests.RequestException as exc:
             print(f"  Game-center JS fetch failed: {type(exc).__name__}: {exc}")
     print(f"  Elements with date attributes: {len(soup.select('[data-date], [data-datetime], time[datetime]'))}")
+    # Inspect fixture cards and links associated with SIHF game IDs.
+    game_links = soup.select('a[data-game-id]')
+    print('  Anchors with data-game-id:', len(game_links))
+    for link in game_links[:100]:
+        print('  Game link:', 'href=' + str(link.get('href')), 'game_id=' + str(link.get('data-game-id')), 'league_id=' + str(link.get('data-league-id')), 'text=' + ' '.join(link.stripped_strings)[:300])
+        parent = link.parent
+        for level in range(1, 4):
+            if parent is None:
+                break
+            print('    Game link parent', level, '[' + str(parent.name) + ']:', str(parent)[:1400])
+            parent = parent.parent
     # Inspect server-driven fixture loading and filtering hooks.
     htmx_elements = [tag for tag in soup.find_all(True) if any(str(key).startswith('hx-') for key in tag.attrs)]
     print('  Elements with HTMX attributes:', len(htmx_elements))
