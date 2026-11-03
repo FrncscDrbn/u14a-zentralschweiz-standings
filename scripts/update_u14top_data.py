@@ -185,10 +185,27 @@ def print_scrape_diagnostics(soup, response):
         if body and any(team.casefold() in body.casefold() for team in ("Argovia Stars", "SC Langenthal", "EHC Basel Nachwuchs I")):
             compact = re.sub(r"\\s+", " ", body)
             print("  Team-bearing script: " + compact[:1200])
-    for tag in soup.find_all(["link", "script"]):
-        href = tag.get("href") or tag.get("src")
-        if href and any(token in href.casefold() for token in ("api", "game", "spiel", "match", "fixture")):
-            print("  Potential data endpoint: " + href)
+    # Inspect the external SIHF game-center bundle; inline HTML has no results.
+    for script in scripts:
+        src = script.get("src", "")
+        if "game-center.js" not in src:
+            continue
+        script_url = requests.compat.urljoin(response.url, src)
+        try:
+            js_response = requests.get(script_url, timeout=25, headers={"User-Agent": "Mozilla/5.0 (compatible; U14Top-Standings/1.0)"})
+            print(f"  Game-center JS status: {js_response.status_code}")
+            print(f"  Game-center JS bytes: {len(js_response.content)}")
+            js = js_response.text
+            urls = sorted(set(re.findall(r"""(?:https?://[^\\s"\x27<>]+|/(?:[A-Za-z0-9_?&=./%-]+))""", js)))
+            for endpoint in urls:
+                if any(token in endpoint.casefold() for token in ("api", "game", "spiel", "match", "fixture", "result")):
+                    print("  JS endpoint candidate: " + endpoint[:300])
+            for keyword in ("fetch(", "XMLHttpRequest", "axios", "ajax", "api/", "game-center"):
+                for match in list(re.finditer(re.escape(keyword), js, re.I))[:3]:
+                    pos = match.start()
+                    print(f"  JS context [{keyword}]: {js[max(0, pos-220):pos+420]}")
+        except requests.RequestException as exc:
+            print(f"  Game-center JS fetch failed: {type(exc).__name__}: {exc}")
     print(f"  Elements with date attributes: {len(soup.select('[data-date], [data-datetime], time[datetime]'))}")
 
 def main():
