@@ -159,7 +159,20 @@ def print_scrape_diagnostics(soup, response):
         print(f"  Team occurrences [{team}]: {len(positions)}")
         for pos in positions[:2]:
             start, end = max(0, pos - 160), min(len(page_text), pos + len(team) + 240)
-            print(f"    Context: {page_text[start:end]}")
+            print(f"    Context: {page_text[start:end]}")    # Show exactly how completed fixtures are represented in the current response.
+    for pos, match in enumerate(re.finditer(r"Ende", page_text, re.I), start=1):
+        start, end = max(0, match.start() - 260), min(len(page_text), match.end() + 360)
+        print(f"  Ende context {pos}: {page_text[start:end]}")
+    status_nodes = list(soup.find_all(string=re.compile(r"Ende", re.I)))
+    print(f"  Text nodes containing Ende: {len(status_nodes)}")
+    for index, node in enumerate(status_nodes[:5], start=1):
+        print(f"    Ende node {index}: {str(node).strip()!r}")
+        parent = node.parent
+        for depth in range(4):
+            if parent is None:
+                break
+            parent_text = re.sub(r"\\s+", " ", parent.get_text(" ", strip=True))
+            print(f"      ancestor {depth + 1} [{parent.name}]: {parent_text[:500]}")
     print(f"  HTML text-node count: {len(soup.find_all(string=True))}")
     print(f"  Elements with date attributes: {len(soup.select('[data-date], [data-datetime], time[datetime]'))}")
 
