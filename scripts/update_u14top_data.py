@@ -174,6 +174,21 @@ def print_scrape_diagnostics(soup, response):
             parent_text = re.sub(r"\\s+", " ", parent.get_text(" ", strip=True))
             print(f"      ancestor {depth + 1} [{parent.name}]: {parent_text[:500]}")
     print(f"  HTML text-node count: {len(soup.find_all(string=True))}")
+    # Check whether completed results are embedded in page hydration scripts.
+    scripts = soup.find_all("script")
+    print(f"  Script elements: {len(scripts)}")
+    for script in scripts:
+        src = script.get("src")
+        if src:
+            print(f"  Script src: {src}")
+        body = script.string or script.get_text(" ", strip=True)
+        if body and any(team.casefold() in body.casefold() for team in ("Argovia Stars", "SC Langenthal", "EHC Basel Nachwuchs I")):
+            compact = re.sub(r"\\s+", " ", body)
+            print("  Team-bearing script: " + compact[:1200])
+    for tag in soup.find_all(["link", "script"]):
+        href = tag.get("href") or tag.get("src")
+        if href and any(token in href.casefold() for token in ("api", "game", "spiel", "match", "fixture")):
+            print("  Potential data endpoint: " + href)
     print(f"  Elements with date attributes: {len(soup.select('[data-date], [data-datetime], time[datetime]'))}")
 
 def main():
