@@ -144,7 +144,7 @@ def game_date_for_node(node, soup):
 
 def print_scrape_diagnostics(soup, response):
     """Print bounded diagnostics when SIHF's page no longer matches our parser."""
-    page_text = re.sub(r"\\s+", " ", soup.get_text(" ", strip=True))
+    page_text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
     print("SIHF scrape diagnostics:")
     print(f"  HTTP status: {response.status_code}")
     print(f"  Final URL: {response.url}")
