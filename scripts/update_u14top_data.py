@@ -171,7 +171,7 @@ def print_scrape_diagnostics(soup, response):
         for depth in range(4):
             if parent is None:
                 break
-            parent_text = re.sub(r"\\s+", " ", parent.get_text(" ", strip=True))
+            parent_text = re.sub(r"\s+", " ", parent.get_text(" ", strip=True))
             print(f"      ancestor {depth + 1} [{parent.name}]: {parent_text[:500]}")
     print(f"  HTML text-node count: {len(soup.find_all(string=True))}")
     # Check whether completed results are embedded in page hydration scripts.
@@ -183,7 +183,7 @@ def print_scrape_diagnostics(soup, response):
             print(f"  Script src: {src}")
         body = script.string or script.get_text(" ", strip=True)
         if body and any(team.casefold() in body.casefold() for team in ("Argovia Stars", "SC Langenthal", "EHC Basel Nachwuchs I")):
-            compact = re.sub(r"\\s+", " ", body)
+            compact = re.sub(r"\s+", " ", body)
             print("  Team-bearing script: " + compact[:1200])
     # Inspect the external SIHF game-center bundle; inline HTML has no results.
     for script in scripts:
@@ -308,7 +308,7 @@ def main():
             continue
 
         detail_soup = BeautifulSoup(detail.text, "html.parser")
-        detail_text = re.sub(r"\\s+", " ", detail_soup.get_text(" ", strip=True))
+        detail_text = re.sub(r"\s+", " ", detail_soup.get_text(" ", strip=True))
         match = SCORE.search(detail_text)
         if not match:
             # Scheduled fixtures normally say "Wie geplant"; they are not
@@ -317,7 +317,7 @@ def main():
 
         # The fixture card itself identifies its league/group. Restrict the
         # scraper to Group 2 and the known Zentralschweiz team roster.
-        card_text = re.sub(r"\\s+", " ", link.get_text(" ", strip=True))
+        card_text = re.sub(r"\s+", " ", link.get_text(" ", strip=True))
         card_context = " ".join((card_text, detail_text))
         group_match = GROUP_LABEL.search(card_context)
         if not group_match or int(group_match.group(1)) != 2:
@@ -383,7 +383,7 @@ def main():
     )
     payload = {"source": [SOURCE], "updated_at": updated_at, "games": games}
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Parsed {len(games)} completed Zentralschweiz Group 2 games from {len(seen_ids)} fixture cards.")
     print(f"Skipped {skipped_no_date} completed score candidates without fixture-local dates.")
 
