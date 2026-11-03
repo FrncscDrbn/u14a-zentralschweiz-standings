@@ -207,22 +207,30 @@ def print_scrape_diagnostics(soup, response):
         except requests.RequestException as exc:
             print(f"  Game-center JS fetch failed: {type(exc).__name__}: {exc}")
     print(f"  Elements with date attributes: {len(soup.select('[data-date], [data-datetime], time[datetime]'))}")
-    # Probe the HTMX GameShort endpoint used to populate individual fixture cards.
+    # Replay the HTMX request with the originating page's cookies and browser headers.
     probe_links = soup.select('a[hx-get][data-game-id]')[:5]
-    print('  GameShort endpoint probes:', len(probe_links))
+    print('  Browser-style GameShort endpoint probes:', len(probe_links))
+    session = requests.Session()
+    session.cookies.update(response.cookies)
+    browser_headers = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html, */*; q=0.01',
+        'Referer': response.url,
+        'Origin': 'https://www.sihf.ch',
+        'X-Requested-With': 'XMLHttpRequest',
+        'HX-Request': 'true',
+        'HX-Current-URL': response.url,
+    }
     for link in probe_links:
         endpoint = requests.compat.urljoin(response.url, link.get('hx-get', ''))
         try:
-            detail = requests.get(endpoint, timeout=25, headers={
-                'User-Agent': 'Mozilla/5.0 (compatible; U14Top-Standings/1.0)',
-                'HX-Request': 'true',
-                'HX-Current-URL': response.url,
-            })
+            detail = session.get(endpoint, timeout=25, headers=browser_headers)
             detail_soup = BeautifulSoup(detail.text, 'html.parser')
             detail_text = re.sub(r'\\s+', ' ', detail_soup.get_text(' ', strip=True))
             print('  GameShort:', 'game_id=' + str(link.get('data-game-id')), 'status=' + str(detail.status_code), 'bytes=' + str(len(detail.content)), 'content_type=' + str(detail.headers.get('Content-Type')))
+            print('    Response headers:', {key: detail.headers.get(key) for key in ('HX-Trigger', 'HX-Redirect', 'Location', 'Set-Cookie') if detail.headers.get(key)})
             print('    Text:', detail_text[:1000])
-            print('    HTML:', detail.text[:1800].replace('\\n', ' ') )
+            print('    HTML:', detail.text[:1800].replace('\\n', ' '))
         except requests.RequestException as exc:
             print('  GameShort request failed:', type(exc).__name__, str(exc))
     # Inspect fixture cards and links associated with SIHF game IDs.
