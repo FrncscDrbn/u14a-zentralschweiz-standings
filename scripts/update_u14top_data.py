@@ -349,7 +349,32 @@ def main():
             + "; ".join(failed_cards[:5])
         )
 
-    games = sorted(games_by_key.values(), key=lambda g: (g["date"], g["home"], g["away"]))
+    # Merge the fresh SIHF scrape into the last known season history.
+    # The group schedule endpoint can return only a partial set of recent games;
+    # replacing the file with that response would erase earlier rounds.
+    try:
+        previous = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        previous = {}
+
+    merged = {}
+    for game in previous.get("games", []):
+        if not isinstance(game, dict):
+            continue
+        if (game.get("home") not in TEAMS or game.get("away") not in TEAMS
+                or not re.fullmatch(r"20\\d{2}-\\d{2}-\\d{2}", str(game.get("date", "")))
+                or not isinstance(game.get("home_score"), int)
+                or not isinstance(game.get("away_score"), int)):
+            continue
+        key = (game["date"], game["home"], game["away"])
+        merged[key] = game
+
+    # Fresh results take precedence if SIHF corrects a previously published score.
+    for game in games_by_key.values():
+        key = (game["date"], game["home"], game["away"])
+        merged[key] = game
+
+    games = sorted(merged.values(), key=lambda g: (g["date"], g["home"], g["away"]))
 
     # A valid schedule with no completed games is a normal outcome (e.g. a
     # weekday with no matches or before the first result). Keep the last known
@@ -372,10 +397,6 @@ def main():
     if any(g["home"] not in allowed or g["away"] not in allowed for g in games):
         raise SystemExit("Unexpected team in parsed results; refusing to overwrite data.")
 
-    try:
-        previous = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
-    except (OSError, json.JSONDecodeError):
-        previous = {}
     changed = previous.get("source") != [SOURCE] or previous.get("games") != games
     updated_at = (
         datetime.now(timezone.utc).isoformat(timespec="seconds")
