@@ -362,7 +362,7 @@ def main():
         if not isinstance(game, dict):
             continue
         if (game.get("home") not in TEAMS or game.get("away") not in TEAMS
-                or not re.fullmatch(r"20\\d{2}-\\d{2}-\\d{2}", str(game.get("date", "")))
+                or not re.fullmatch(r"20\d{2}-\d{2}-\d{2}", str(game.get("date", "")))
                 or not isinstance(game.get("home_score"), int)
                 or not isinstance(game.get("away_score"), int)):
             continue
