@@ -2,7 +2,7 @@
   "source": [
     "https://www.sihf.ch/de/game-center/liga/spielplan/123-3?group=74720"
   ],
-  "updated_at": "2026-11-09T07:36:01.269Z",
+  "updated_at": "2026-11-13T14:53:11+00:00",
   "games": [
     {
       "date": "2026-10-03",
@@ -202,6 +202,20 @@
     },
     {
       "date": "2026-11-08",
+      "home": "EHC Burgdorf",
+      "home_score": 9,
+      "away": "SC Langenthal",
+      "away_score": 6
+    },
+    {
+      "date": "2026-11-08",
+      "home": "HC NWU",
+      "home_score": 2,
+      "away": "HC Dragon Thun gelb",
+      "away_score": 4
+    },
+    {
+      "date": "2026-11-08",
       "home": "SC Bern Future schwarz",
       "home_score": 8,
       "away": "EHC Olten Prospect",
@@ -213,6 +227,13 @@
       "home_score": 1,
       "away": "EHC Basel Nachwuchs I",
       "away_score": 6
+    },
+    {
+      "date": "2026-11-11",
+      "home": "SC Langenthal",
+      "home_score": 6,
+      "away": "HC Dragon Thun gelb",
+      "away_score": 4
     }
   ]
 }
