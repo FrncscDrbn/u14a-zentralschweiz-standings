@@ -8,7 +8,7 @@
     "https://www.sihf.ch/de/game-center/team/spielplan/124-3-104011",
     "https://www.sihf.ch/de/game-center/team/spielplan/124-3-105874"
   ],
-  "updated_at": "2026-11-08T13:30:38+00:00",
+  "updated_at": "2026-11-14T22:30:03+00:00",
   "games": [
     {
       "date": "2026-09-26",
@@ -156,6 +156,20 @@
       "home_score": 4,
       "away": "HC NWU Black",
       "away_score": 10
+    },
+    {
+      "date": "2026-11-14",
+      "home": "EHC Basel Nachwuchs",
+      "home_score": 4,
+      "away": "EHC Sursee",
+      "away_score": 5
+    },
+    {
+      "date": "2026-11-14",
+      "home": "HC NWU Green",
+      "home_score": 3,
+      "away": "Argovia Stars",
+      "away_score": 2
     }
   ]
 }
