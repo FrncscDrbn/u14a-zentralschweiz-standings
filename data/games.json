@@ -8,7 +8,7 @@
     "https://www.sihf.ch/de/game-center/team/spielplan/124-3-104011",
     "https://www.sihf.ch/de/game-center/team/spielplan/124-3-105874"
   ],
-  "updated_at": "2026-11-14T22:30:03+00:00",
+  "updated_at": "2026-11-16T15:54:49+00:00",
   "games": [
     {
       "date": "2026-09-26",
@@ -170,6 +170,20 @@
       "home_score": 3,
       "away": "Argovia Stars",
       "away_score": 2
+    },
+    {
+      "date": "2026-11-15",
+      "home": "HC Wohlen Freiamt",
+      "home_score": 12,
+      "away": "LUNOXX Reinach",
+      "away_score": 8
+    },
+    {
+      "date": "2026-11-15",
+      "home": "Hockey Innerschwyz HCI II",
+      "home_score": 7,
+      "away": "HC NWU Black",
+      "away_score": 3
     }
   ]
 }
